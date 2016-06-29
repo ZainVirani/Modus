@@ -8,20 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		186EC7811D21A5CA00E3AF4B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186EC7801D21A5CA00E3AF4B /* AppDelegate.swift */; };
-		186EC7831D21A5CA00E3AF4B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186EC7821D21A5CA00E3AF4B /* ViewController.swift */; };
+		186EC7831D21A5CA00E3AF4B /* MusicLibraryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186EC7821D21A5CA00E3AF4B /* MusicLibraryController.swift */; };
 		186EC7861D21A5CA00E3AF4B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7841D21A5CA00E3AF4B /* Main.storyboard */; };
 		186EC7881D21A5CA00E3AF4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7871D21A5CA00E3AF4B /* Assets.xcassets */; };
 		186EC78B1D21A5CA00E3AF4B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7891D21A5CA00E3AF4B /* LaunchScreen.storyboard */; };
+		187359601D21A97600FEFE45 /* ItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1873595F1D21A97600FEFE45 /* ItemCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		186EC77D1D21A5C900E3AF4B /* Modus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Modus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		186EC77D1D21A5C900E3AF4B /* modus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = modus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		186EC7801D21A5CA00E3AF4B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		186EC7821D21A5CA00E3AF4B /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		186EC7821D21A5CA00E3AF4B /* MusicLibraryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicLibraryController.swift; sourceTree = "<group>"; };
 		186EC7851D21A5CA00E3AF4B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		186EC7871D21A5CA00E3AF4B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		186EC78A1D21A5CA00E3AF4B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		186EC78C1D21A5CA00E3AF4B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1873595F1D21A97600FEFE45 /* ItemCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ItemCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -46,7 +48,7 @@
 		186EC77E1D21A5C900E3AF4B /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				186EC77D1D21A5C900E3AF4B /* Modus.app */,
+				186EC77D1D21A5C900E3AF4B /* modus.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,7 +57,8 @@
 			isa = PBXGroup;
 			children = (
 				186EC7801D21A5CA00E3AF4B /* AppDelegate.swift */,
-				186EC7821D21A5CA00E3AF4B /* ViewController.swift */,
+				186EC7821D21A5CA00E3AF4B /* MusicLibraryController.swift */,
+				1873595F1D21A97600FEFE45 /* ItemCell.swift */,
 				186EC7841D21A5CA00E3AF4B /* Main.storyboard */,
 				186EC7871D21A5CA00E3AF4B /* Assets.xcassets */,
 				186EC7891D21A5CA00E3AF4B /* LaunchScreen.storyboard */,
@@ -81,7 +84,7 @@
 			);
 			name = Modus;
 			productName = Modus;
-			productReference = 186EC77D1D21A5C900E3AF4B /* Modus.app */;
+			productReference = 186EC77D1D21A5C900E3AF4B /* modus.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -96,6 +99,7 @@
 				TargetAttributes = {
 					186EC77C1D21A5C900E3AF4B = {
 						CreatedOnToolsVersion = 7.3.1;
+						DevelopmentTeam = 5PEG7GJA4M;
 					};
 				};
 			};
@@ -135,8 +139,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				186EC7831D21A5CA00E3AF4B /* ViewController.swift in Sources */,
+				186EC7831D21A5CA00E3AF4B /* MusicLibraryController.swift in Sources */,
 				186EC7811D21A5CA00E3AF4B /* AppDelegate.swift in Sources */,
+				187359601D21A97600FEFE45 /* ItemCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,10 +256,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.Modus;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = modus;
 			};
 			name = Debug;
 		};
@@ -262,10 +268,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.Modus;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = modus;
 			};
 			name = Release;
 		};
@@ -288,6 +295,7 @@
 				186EC7911D21A5CA00E3AF4B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

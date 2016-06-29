@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="8150" systemVersion="15A204g" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" initialViewController="01J-lp-oVM">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="10117" systemVersion="15F34" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" initialViewController="01J-lp-oVM">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="8122"/>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
+        <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
+        <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
     </dependencies>
     <scenes>
         <!--View Controller-->
@@ -15,8 +18,30 @@
                     <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <animations/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="splash" translatesAutoresizingMaskIntoConstraints="NO" id="hSh-3c-JLo">
+                                <rect key="frame" x="71" y="103" width="459" height="395"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="hSh-3c-JLo" secondAttribute="height" multiplier="29:25" id="AHH-uL-nrc"/>
+                                </constraints>
+                            </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="powered by nothing yet" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="p1b-x3-Oaa">
+                                <rect key="frame" x="210" y="571" width="180" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <color key="textColor" red="0.36862745098039218" green="0.36862745098039218" blue="0.36862745098039218" alpha="1" colorSpace="calibratedRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="hSh-3c-JLo" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="FhL-pP-dbN"/>
+                            <constraint firstItem="hSh-3c-JLo" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leadingMargin" priority="751" constant="50" id="L70-Gk-XMS"/>
+                            <constraint firstItem="hSh-3c-JLo" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Nyp-qH-JLo"/>
+                            <constraint firstItem="p1b-x3-Oaa" firstAttribute="top" relation="greaterThanOrEqual" secondItem="hSh-3c-JLo" secondAttribute="bottom" id="PhU-iM-7rl"/>
+                            <constraint firstItem="p1b-x3-Oaa" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="RqR-c0-Twb"/>
+                            <constraint firstItem="xb3-aO-Qok" firstAttribute="top" secondItem="p1b-x3-Oaa" secondAttribute="bottom" constant="8" id="d2h-BT-KDP"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="hSh-3c-JLo" secondAttribute="trailing" priority="751" constant="50" id="y8Z-tG-qo2"/>
+                        </constraints>
                     </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -24,4 +49,7 @@
             <point key="canvasLocation" x="53" y="375"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="splash" width="435" height="375"/>
+    </resources>
 </document>
