@@ -16,7 +16,8 @@
  import tags
  full music player
  volume control
- search
+ search (see makestagram part 2)
+ cache collections and table data for switching views
  cancel search
  */
 /*  TODO
@@ -65,10 +66,9 @@ class musicLibraryController: UIViewController{
         syncLibrary()
     }
     
-    @IBAction func cellButton(sender: AnyObject) {
-        
+    func cellTap(sender: AnyObject) {
         print("cell pressed")
-        let itemIndex = sender.tag!
+        let itemIndex = sender.view.tag
         itemCollection = MPMediaItemCollection(items: mediaItems)
         
         player.setQueueWithItemCollection(itemCollection)
@@ -92,7 +92,7 @@ class musicLibraryController: UIViewController{
             playerInfo.text = cell.itemInfo.text
             
         }
-        currentItem = sender.tag!
+        currentItem = sender.view.tag
         
         if previousItem != itemIndex{
             if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
@@ -256,7 +256,7 @@ class musicLibraryController: UIViewController{
         oldSongCount+=newSongCount
         newSongCount = 0
         
-        //update table cell count
+        //update table cells
         itemTable.reloadData()
     }
     
@@ -274,11 +274,11 @@ extension musicLibraryController: UITableViewDataSource {
     
     // 2
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCellWithIdentifier("itemCell", forIndexPath: indexPath) as! itemCell
         
         // 1
         let row = indexPath.row
-        cell.cellButton.tag = indexPath.row
         
         // 2
         let item = mediaItems[row]
@@ -316,20 +316,13 @@ extension musicLibraryController: UITableViewDataSource {
             //default artwork
         }
 
+        cell.tag = indexPath.row
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.cellTap(_:)))
         
+        cell.addGestureRecognizer(tapGesture)
         
         return cell
     }
-    
-    /*override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath)
-     {
-     if editingStyle == .Delete {
-     //1
-     RealmHelper.deleteNote(notes[indexPath.row])
-     //2
-     notes = RealmHelper.retrieveNotes()
-     }
-     }*/
 }
 
 extension musicLibraryController: UITableViewDelegate {
