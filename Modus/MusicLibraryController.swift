@@ -38,15 +38,22 @@
 import Foundation
 import UIKit
 import MediaPlayer
-//import RealmSwift
+import RealmSwift
 
 class musicLibraryController: UIViewController{
+    
+    var mediaItems: [MPMediaItem] = []
+    
+    var newSongCount = 0 //don't save to Realm
+    var oldSongCount = 0 //save to Realm on each sync
 
     let player = MPMusicPlayerController.systemMusicPlayer()
     var previousItem = 0
     var currentItem = 0
     var firstPlay = false
     var itemCollection: MPMediaItemCollection = MPMediaItemCollection(items: [])
+    let realm = try! Realm()
+    var appData: Results<AppData>?
     
     @IBOutlet weak var itemTable: UITableView!
     
@@ -61,39 +68,45 @@ class musicLibraryController: UIViewController{
     @IBOutlet weak var playerTotTime: UILabel!
     @IBOutlet weak var playerProgress: UIProgressView! //not done
     
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        appData = realm.objects(AppData) //retrieve app data
+        if let data = appData{
+            if data.isEmpty{
+                let newAppData = AppData() //create new
+                newAppData.name = "oldSongCount"
+                newAppData.value = oldSongCount
+                newAppData.content = "contains old song count"
+                try! realm.write() {
+                    realm.add(newAppData)
+                }
+                print("app data created")
+
+            }
+            else{
+                oldSongCount = data[0].value //retrieve old
+                print("app data retrieved... OSC = \(oldSongCount)")
+            }
+            
+        }
+        player.pause()
+        player.nowPlayingItem = nil
+        syncLibrary()
+        itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
+    }
     
     @IBAction func syncLibButton(sender: AnyObject) {
         syncLibrary()
     }
     
+    //add action for sort change, syncLibrary()
+    
     func cellTap(sender: AnyObject) {
         print("cell pressed")
-        let itemIndex = sender.view.tag
-        itemCollection = MPMediaItemCollection(items: mediaItems)
-        
-        player.setQueueWithItemCollection(itemCollection)
-        player.nowPlayingItem = itemCollection.items[itemIndex]
-        playerTotTime.text = stringFromTimeInterval(itemCollection.items[itemIndex].playbackDuration)
-        player.prepareToPlay()
-        player.play()
-        //audioProgress(0)
-        if let image = UIImage(named: "pause.png") {
-            playerPlayButton.setImage(image, forState: .Normal)
-        }
-        print("currently playing \(player.nowPlayingItem?.title)")
-        
-        let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
-        let prevIndexPath = NSIndexPath(forRow: previousItem, inSection: 0)
-        if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
-            cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-            cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-            playerArtwork.image = cell.artwork.image
-            playerTitle.text = cell.itemTitle.text
-            playerInfo.text = cell.itemInfo.text
-            
-        }
         currentItem = sender.view.tag
+        let itemIndex = playItem(currentItem)
         
+        let prevIndexPath = NSIndexPath(forRow: previousItem, inSection: 0)
         if previousItem != itemIndex{
             if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
                 prevCell.itemTitle.font = UIFont.systemFontOfSize(17)
@@ -104,13 +117,6 @@ class musicLibraryController: UIViewController{
         if firstPlay == false{
             firstPlay = true
         }
-    }
-    
-    func stringFromTimeInterval(interval: NSTimeInterval) -> String {
-        let interval = Int(interval)
-        let seconds = interval % 60
-        let minutes = (interval / 60) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
     }
     
     @IBAction func playerPlayButton(sender: AnyObject) {
@@ -140,31 +146,9 @@ class musicLibraryController: UIViewController{
         print("next pressed")
         if firstPlay == true && (currentItem+1) != itemCollection.items.count{ //if a song is in the "slot"
             currentItem += 1
-            let itemIndex = currentItem
-            itemCollection = MPMediaItemCollection(items: mediaItems)
-            
-            player.setQueueWithItemCollection(itemCollection)
-            player.nowPlayingItem = itemCollection.items[itemIndex]
-            playerTotTime.text = stringFromTimeInterval(itemCollection.items[itemIndex].playbackDuration)
-            player.prepareToPlay()
-            player.play()
-            if let image = UIImage(named: "pause.png") {
-                playerPlayButton.setImage(image, forState: .Normal)
-            }
-            print("currently playing \(player.nowPlayingItem?.title)")
-            
-            let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
+            let itemIndex = playItem(currentItem)
             let prevIndexPath = NSIndexPath(forRow: previousItem, inSection: 0)
-            if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
-                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-                playerArtwork.image = cell.artwork.image
-                playerTitle.text = cell.itemTitle.text
-                playerInfo.text = cell.itemInfo.text
-                
-            }
-            
-            if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
+            if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? { //sometimes unbolding fucks up
                 prevCell.itemTitle.font = UIFont.systemFontOfSize(17)
                 prevCell.itemInfo.font = UIFont.systemFontOfSize(17)
                 previousItem = itemIndex
@@ -174,41 +158,54 @@ class musicLibraryController: UIViewController{
         }
     }
     
-    
     @IBAction func playerPrevButton(sender: AnyObject) {
         print("prev pressed")
         if firstPlay == true && currentItem != 0{
             currentItem += -1
-            let itemIndex = currentItem
-            itemCollection = MPMediaItemCollection(items: mediaItems)
-            
-            player.setQueueWithItemCollection(itemCollection)
-            player.nowPlayingItem = itemCollection.items[itemIndex]
-            playerTotTime.text = stringFromTimeInterval(itemCollection.items[itemIndex].playbackDuration)
-            player.prepareToPlay()
-            player.play()
-            if let image = UIImage(named: "pause.png") {
-                playerPlayButton.setImage(image, forState: .Normal)
-            }
-            print("currently playing \(player.nowPlayingItem?.title)")
-            
-            let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
+            let itemIndex = playItem(currentItem)
             let prevIndexPath = NSIndexPath(forRow: previousItem, inSection: 0)
-            if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
-                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-                playerArtwork.image = cell.artwork.image
-                playerTitle.text = cell.itemTitle.text
-                playerInfo.text = cell.itemInfo.text
-                
-            }
-            
             if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
                 prevCell.itemTitle.font = UIFont.systemFontOfSize(17)
                 prevCell.itemInfo.font = UIFont.systemFontOfSize(17)
                 previousItem = itemIndex
             }
         }
+    }
+    
+    func playItem(current: Int) -> Int{
+        let itemIndex = current
+        itemCollection = MPMediaItemCollection(items: mediaItems)
+        
+        player.setQueueWithItemCollection(itemCollection)
+        player.nowPlayingItem = itemCollection.items[itemIndex]
+        playerTotTime.text = stringFromTimeInterval(itemCollection.items[itemIndex].playbackDuration)
+        player.prepareToPlay()
+        //
+        player.play()
+        if let image = UIImage(named: "pause.png") {
+            playerPlayButton.setImage(image, forState: .Normal)
+        }
+        print("currently playing \(player.nowPlayingItem?.title)")
+        
+        let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
+        if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
+            cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+            cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+            playerArtwork.image = cell.artwork.image
+            playerTitle.text = cell.itemTitle.text
+            playerInfo.text = cell.itemInfo.text
+            
+        }
+        
+        return itemIndex
+
+    }
+    
+    func stringFromTimeInterval(interval: NSTimeInterval) -> String {
+        let interval = Int(interval)
+        let seconds = interval % 60
+        let minutes = (interval / 60) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
     }
     
     func audioProgress(state: Int){ //closure?
@@ -227,25 +224,9 @@ class musicLibraryController: UIViewController{
         }
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        player.pause()
-        player.nowPlayingItem = nil
-        syncLibrary()
-        itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
-    }
-    
-    
-    var mediaItems: [MPMediaItem] = []
-    
-    var newSongCount = 0 //don't save to Realm
-    var oldSongCount = 0 //save to Realm
-    
     func syncLibrary(){
         mediaItems.removeAll()
-        mediaItems = MPMediaQuery.songsQuery().items!
-        
-        
+        mediaItems = sortItems()
         newSongCount = mediaItems.count - oldSongCount
         let alertController = UIAlertController(title: "modus", message:
             "New songs synced: \(newSongCount)\nTotal songs synced: \(mediaItems.count)", preferredStyle: UIAlertControllerStyle.Alert)
@@ -255,11 +236,34 @@ class musicLibraryController: UIViewController{
         print("New songs synced: \(newSongCount)\nTotal songs synced: \(mediaItems.count)")
         oldSongCount+=newSongCount
         newSongCount = 0
-        
+        let realm = try! Realm()
+        try! realm.write() {
+            appData![0].value = oldSongCount
+            appData![0].modificationTime = NSDate()
+        }
         //update table cells
         itemTable.reloadData()
     }
     
+    func sortItems() -> [MPMediaItem]{
+        let sort = sortType.selectedSegmentIndex
+        let subSort = subSortType.selectedSegmentIndex
+        if sort == 4{
+            if subSort == 0{
+                return MPMediaQuery.songsQuery().items!
+            }
+            else if subSort == 1{
+                var query = MPMediaQuery.songsQuery().items!
+                query.sortInPlace{
+                    //print("\($0.title)'s playcount is \($0.playCount)\nand \($1.title)'s playcount is \($1.playCount)")
+                    return $0.playCount > $1.playCount
+                }
+                return query
+            }
+        }
+        print("sort unknown")
+        return MPMediaQuery.songsQuery().items!
+    }
 }
 
 extension musicLibraryController: UITableViewDataSource {

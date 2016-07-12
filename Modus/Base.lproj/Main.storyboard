@@ -328,7 +328,7 @@
                                 <action selector="syncLibButton:" destination="aFT-Pi-bBg" id="yqK-3b-CFh"/>
                             </connections>
                         </barButtonItem>
-                        <barButtonItem key="rightBarButtonItem" title="Tag Editor" id="g6S-7h-SHV">
+                        <barButtonItem key="rightBarButtonItem" enabled="NO" title="Tag Editor" id="g6S-7h-SHV">
                             <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                             <connections>
                                 <segue destination="8gv-on-TEj" kind="show" identifier="segueToTagEditor" id="FgA-Gh-R92"/>
@@ -503,7 +503,7 @@
                     </view>
                     <navigationItem key="navigationItem" title="Music Player" id="Dxt-7p-4pJ">
                         <barButtonItem key="leftBarButtonItem" title="Music Library" id="WYY-vm-Qdz"/>
-                        <barButtonItem key="rightBarButtonItem" title="Tag Editor" id="7X1-WS-xQQ">
+                        <barButtonItem key="rightBarButtonItem" enabled="NO" title="Tag Editor" id="7X1-WS-xQQ">
                             <connections>
                                 <segue destination="8gv-on-TEj" kind="show" id="Dm2-EJ-NPX"/>
                             </connections>
@@ -530,7 +530,7 @@
                                 <rect key="frame" x="0.0" y="64" width="600" height="536"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
-                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" id="O9P-eK-RNK">
+                                    <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="itemCell" id="O9P-eK-RNK">
                                         <rect key="frame" x="0.0" y="65" width="600" height="61"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="O9P-eK-RNK" id="pki-er-owN">
