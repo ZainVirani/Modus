@@ -58,6 +58,9 @@
                                                     <segment title="Album"/>
                                                     <segment title="Songs"/>
                                                 </segments>
+                                                <connections>
+                                                    <action selector="changeSort:" destination="aFT-Pi-bBg" eventType="valueChanged" id="S6Y-xn-ui6"/>
+                                                </connections>
                                             </segmentedControl>
                                         </subviews>
                                         <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
@@ -83,6 +86,9 @@
                                                     <segment title="Playcount"/>
                                                 </segments>
                                                 <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                <connections>
+                                                    <action selector="changeSubSort:" destination="aFT-Pi-bBg" eventType="valueChanged" id="QYV-XB-6wV"/>
+                                                </connections>
                                             </segmentedControl>
                                             <searchBar contentMode="redraw" misplaced="YES" layoutMarginsFollowReadableWidth="YES" barStyle="black" searchBarStyle="prominent" placeholder="Search" translatesAutoresizingMaskIntoConstraints="NO" id="c6v-GW-TFy">
                                                 <rect key="frame" x="300" y="0.0" width="300" height="35"/>
@@ -550,7 +556,9 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Tag Editor" id="S5F-Ut-Zfc">
-                        <barButtonItem key="leftBarButtonItem" title="Back" id="jX5-t4-Qa2"/>
+                        <barButtonItem key="leftBarButtonItem" title="Back" id="jX5-t4-Qa2">
+                            <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" title="Import Tags" id="d3k-zE-URn"/>
                     </navigationItem>
                 </viewController>
@@ -565,6 +573,6 @@
         <image name="play" width="64" height="64"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="Dm2-EJ-NPX"/>
+        <segue reference="FgA-Gh-R92"/>
     </inferredMetricsTieBreakers>
 </document>
