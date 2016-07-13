@@ -52,6 +52,7 @@ class musicLibraryController: UIViewController{
 
     let player = MPMusicPlayerController.systemMusicPlayer()
     var oldPlayerState = 1 //starts paused
+    var oldPlayerItem: MPMediaEntityPersistentID?
     var previousItem = 0
     var currentItem = 0
     var firstPlay = false
@@ -95,7 +96,7 @@ class musicLibraryController: UIViewController{
         }
         player.pause()
         player.nowPlayingItem = nil
-        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkPlayButtonState), userInfo: nil, repeats: true) //60FPS bois
+        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true) //60FPS bois
         syncLibrary()
         itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
     }
@@ -136,7 +137,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
-    func checkPlayButtonState(){
+    func checkExternalButtonPress(){
         if firstPlay == true && oldPlayerState == player.playbackState.rawValue{
             if player.playbackState.rawValue == 2{ //if paused
                 print("pause externally pressed")
@@ -152,7 +153,11 @@ class musicLibraryController: UIViewController{
                     playerPlayButton.setImage(image, forState: .Normal)
                 }
             }
-            
+        }
+        if firstPlay == true && oldPlayerItem != player.nowPlayingItem?.persistentID{
+            print("change externally pressed")
+            oldPlayerItem = player.nowPlayingItem?.persistentID
+            reloadTableInMainThread()
         }
     }
     
@@ -164,6 +169,7 @@ class musicLibraryController: UIViewController{
             unBoldPrevItem(itemIndex)
         }
         if firstPlay == false{
+            oldPlayerItem = player.nowPlayingItem?.persistentID
             firstPlay = true
         }
     }
@@ -379,8 +385,12 @@ extension musicLibraryController: UITableViewDataSource {
             if player.nowPlayingItem?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
                 cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
                 cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+                playerTotTime.text = stringFromTimeInterval((player.nowPlayingItem?.playbackDuration)!)
                 currentItem = indexPath.row
                 previousItem = indexPath.row
+                playerArtwork.image = cell.artwork.image
+                playerTitle.text = cell.itemTitle.text
+                playerInfo.text = cell.itemInfo.text
             }
             else{
                 cell.itemTitle.font = UIFont.systemFontOfSize(17)
