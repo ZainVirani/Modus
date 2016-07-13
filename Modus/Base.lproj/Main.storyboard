@@ -361,7 +361,7 @@
         <!--Full Player-->
         <scene sceneID="a8N-E4-kbq">
             <objects>
-                <viewController title="Full Player" id="8ta-ma-6fK" sceneMemberID="viewController">
+                <viewController title="Full Player" id="8ta-ma-6fK" customClass="MusicPlayerController" customModule="modus" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="VGr-qF-KRc"/>
                         <viewControllerLayoutGuide type="bottom" id="iUJ-TR-9Vg"/>
@@ -573,6 +573,6 @@
         <image name="play" width="64" height="64"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="FgA-Gh-R92"/>
+        <segue reference="Dm2-EJ-NPX"/>
     </inferredMetricsTieBreakers>
 </document>

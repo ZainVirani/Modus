@@ -282,7 +282,7 @@ class musicLibraryController: UIViewController{
         return query
     }
     
-    func reSort(inout query: [MPMediaItem]){ //make sure correct cell is bolded
+    func reSort(inout query: [MPMediaItem]){
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{
@@ -290,17 +290,28 @@ class musicLibraryController: UIViewController{
                 query.sortInPlace{
                     return $0.title < $1.title
                 }
+                print("song alpha")
+                reloadTableInMainThread()
+                return
             }
             else if subSort == 1{
                 query.sortInPlace{
                     return $0.playCount > $1.playCount
                 }
+                print("song playcount")
+                reloadTableInMainThread()
+                return
             }
         }
         print("re-sort unknown")
-        itemTable.reloadData()
+        reloadTableInMainThread()
         unBoldPrevItem(currentItem)
-        //find the new curr item and bold
+    }
+    
+    func reloadTableInMainThread(){
+        dispatch_async(dispatch_get_main_queue(), {() -> Void in
+            self.itemTable.reloadData()
+        })
     }
 }
 
@@ -329,6 +340,16 @@ extension musicLibraryController: UITableViewDataSource {
   
         if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
             cell.itemTitle.text = titleOfItem
+            if player.nowPlayingItem?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
+                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+                currentItem = indexPath.row
+                previousItem = indexPath.row
+            }
+            else{
+                cell.itemTitle.font = UIFont.systemFontOfSize(17)
+                cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            }
         }
         else{
             print("Resync Necessary: T")
