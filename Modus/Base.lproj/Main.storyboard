@@ -508,7 +508,11 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Music Player" id="Dxt-7p-4pJ">
-                        <barButtonItem key="leftBarButtonItem" title="Music Library" id="WYY-vm-Qdz"/>
+                        <barButtonItem key="leftBarButtonItem" title="Music Library" id="WYY-vm-Qdz">
+                            <connections>
+                                <segue destination="G65-mG-jbr" kind="unwind" unwindAction="closeFullPlayer:" id="C9x-gw-ceV"/>
+                            </connections>
+                        </barButtonItem>
                         <barButtonItem key="rightBarButtonItem" enabled="NO" title="Tag Editor" id="7X1-WS-xQQ">
                             <connections>
                                 <segue destination="8gv-on-TEj" kind="show" id="Dm2-EJ-NPX"/>
@@ -517,6 +521,7 @@
                     </navigationItem>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fyd-Xp-1pw" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <exit id="G65-mG-jbr" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
             <point key="canvasLocation" x="1016" y="-341"/>
         </scene>

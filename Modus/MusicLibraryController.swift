@@ -45,11 +45,13 @@ class musicLibraryController: UIViewController{
     var mediaItems: [MPMediaItem] = []
     var timer: NSTimer?
     var timeRatio: Float = 0.00
+    var externalInputCheckTimer: NSTimer?
     
     var newSongCount = 0 //don't save to Realm
     var oldSongCount = 0 //save to Realm on each sync
 
     let player = MPMusicPlayerController.systemMusicPlayer()
+    var oldPlayerState = 1 //starts paused
     var previousItem = 0
     var currentItem = 0
     var firstPlay = false
@@ -93,6 +95,7 @@ class musicLibraryController: UIViewController{
         }
         player.pause()
         player.nowPlayingItem = nil
+        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkPlayButtonState), userInfo: nil, repeats: true) //60FPS bois
         syncLibrary()
         itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
     }
@@ -124,13 +127,32 @@ class musicLibraryController: UIViewController{
             else if player.playbackState.rawValue == 1{ //if playing
                 print("pause pressed")
                 player.pause()
-                timer?.invalidate()
                 if let image = UIImage(named: "play.png") {
                     playerPlayButton.setImage(image, forState: .Normal)
                 }
                 print("currently paused")
             }
-
+            
+        }
+    }
+    
+    func checkPlayButtonState(){
+        if firstPlay == true && oldPlayerState == player.playbackState.rawValue{
+            if player.playbackState.rawValue == 2{ //if paused
+                print("pause externally pressed")
+                oldPlayerState = 1
+                if let image = UIImage(named: "play.png") {
+                    playerPlayButton.setImage(image, forState: .Normal)
+                }
+            }
+            else if player.playbackState.rawValue == 1{ //if playing
+                print("play externally pressed")
+                oldPlayerState = 2
+                if let image = UIImage(named: "pause.png") {
+                    playerPlayButton.setImage(image, forState: .Normal)
+                }
+            }
+            
         }
     }
     
@@ -215,18 +237,26 @@ class musicLibraryController: UIViewController{
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    func audioProgress(){ //doesn't shift to next track on track end
-        playerProgress.setProgress(timeRatio, animated: true)
-        playerCurrTime.text = stringFromTimeInterval(player.currentPlaybackTime)
+    func audioProgress(){
+        changeCurrTime()
         timeRatio = Float(player.currentPlaybackTime / (player.nowPlayingItem?.playbackDuration)!)
-        if player.currentPlaybackTime == ((player.nowPlayingItem?.playbackDuration)! - 0.1){ //doesn't reach
-            print("222222")
+        playerProgress.setProgress(timeRatio, animated: true)
+    }
+    
+    func changeCurrTime(){
+        playerCurrTime.text = stringFromTimeInterval(player.currentPlaybackTime)
+        if playerCurrTime.text == playerTotTime.text{
+            print("trackshift")
             timer?.invalidate()
             player.pause()
             if (currentItem+1) != itemCollection.items.count{ //if a song is in the "slot" //next track
-                currentItem += 1
-                let itemIndex = playItem(currentItem)
-                unBoldPrevItem(itemIndex)
+            currentItem += 1
+            let itemIndex = playItem(currentItem)
+            unBoldPrevItem(itemIndex)
+            }
+            else{
+                player.pause()
+                //move to next album or next artist
             }
         }
     }
@@ -242,7 +272,7 @@ class musicLibraryController: UIViewController{
             self.presentViewController(alertController, animated: true, completion: nil)
             return
         }
-        mediaItems = sortItems(&mediaItems)
+        sortItems(&mediaItems)
         newSongCount = mediaItems.count - oldSongCount
         
         /*let alertController = UIAlertController(title: "modus", message:
@@ -260,26 +290,28 @@ class musicLibraryController: UIViewController{
             appData![0].modificationTime = NSDate()
         }
         //update table cells
-        itemTable.reloadData()
+        reloadTableInMainThread()
     }
     
-    func sortItems(inout query: [MPMediaItem]) -> [MPMediaItem]{
+    func sortItems(inout query: [MPMediaItem]){
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{
             if subSort == 0{
-                return query
+                query.sortInPlace{
+                    return $0.title < $1.title
+                }
+                return
             }
             else if subSort == 1{
                 query.sortInPlace{
                     //print("\($0.title)'s playcount is \($0.playCount)\nand \($1.title)'s playcount is \($1.playCount)")
                     return $0.playCount > $1.playCount
                 }
-                return query
+                return
             }
         }
         print("sort unknown")
-        return query
     }
     
     func reSort(inout query: [MPMediaItem]){
@@ -312,6 +344,10 @@ class musicLibraryController: UIViewController{
         dispatch_async(dispatch_get_main_queue(), {() -> Void in
             self.itemTable.reloadData()
         })
+    }
+    
+    @IBAction func closeFullPlayer(segue: UIStoryboardSegue){
+        
     }
 }
 
