@@ -286,6 +286,18 @@
                                                 <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
+                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4jR-Ik-AdI" userLabel="order">
+                                                <rect key="frame" x="498" y="5" width="44" height="30"/>
+                                                <constraints>
+                                                    <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="40" id="lhD-VC-7Eo"/>
+                                                    <constraint firstAttribute="width" constant="44" id="n0W-Q4-cL1"/>
+                                                    <constraint firstAttribute="height" constant="30" id="unJ-XM-8MZ"/>
+                                                </constraints>
+                                                <state key="normal" image="arrows"/>
+                                                <connections>
+                                                    <action selector="playOrderChanged:" destination="aFT-Pi-bBg" eventType="touchUpInside" id="kqq-Ck-szq"/>
+                                                </connections>
+                                            </button>
                                         </subviews>
                                         <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -315,6 +327,8 @@
                                             <constraint firstItem="Rij-VO-4X1" firstAttribute="leading" secondItem="r8S-kt-E6q" secondAttribute="leading" constant="8" id="mVC-aP-z4r"/>
                                             <constraint firstItem="q98-8Q-bfL" firstAttribute="top" secondItem="XEE-v6-9sR" secondAttribute="bottom" id="oeE-lf-MkE"/>
                                             <constraint firstItem="cVf-7g-FRe" firstAttribute="centerY" secondItem="yXy-hO-UWd" secondAttribute="centerY" id="pjy-Zx-Hvm"/>
+                                            <constraint firstItem="4jR-Ik-AdI" firstAttribute="top" secondItem="r8S-kt-E6q" secondAttribute="top" constant="5" id="s5c-dX-ReK"/>
+                                            <constraint firstItem="4jR-Ik-AdI" firstAttribute="centerX" secondItem="EPj-8o-s9e" secondAttribute="centerX" id="yyV-2L-CbS"/>
                                         </constraints>
                                         <connections>
                                             <outletCollection property="gestureRecognizers" destination="Ntk-au-hbB" appends="YES" id="6Mt-tX-HW5"/>
@@ -356,6 +370,7 @@
                     </navigationItem>
                     <connections>
                         <outlet property="itemTable" destination="bsP-xe-9qo" id="ziO-S6-pne"/>
+                        <outlet property="playOrder" destination="4jR-Ik-AdI" id="KSC-XR-C8a"/>
                         <outlet property="playerArtwork" destination="JKk-k4-IAO" id="ShG-6l-HMg"/>
                         <outlet property="playerCurrTime" destination="Rij-VO-4X1" id="Du4-ha-RFi"/>
                         <outlet property="playerInfo" destination="q98-8Q-bfL" id="xDH-rS-TIS"/>
@@ -582,12 +597,13 @@
         </scene>
     </scenes>
     <resources>
+        <image name="arrows" width="64" height="64"/>
         <image name="backarrow" width="64" height="64"/>
         <image name="fast-forward-double-right-arrows-symbol" width="64" height="64"/>
         <image name="play" width="64" height="64"/>
     </resources>
     <inferredMetricsTieBreakers>
         <segue reference="FgA-Gh-R92"/>
-        <segue reference="jLa-Mr-JIg"/>
+        <segue reference="HFJ-SO-fN8"/>
     </inferredMetricsTieBreakers>
 </document>

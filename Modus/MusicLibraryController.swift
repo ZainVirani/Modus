@@ -62,6 +62,12 @@ class musicLibraryController: UIViewController{
     private let realm = try! Realm()
     private var appData: Results<AppData>?
     private var sortChanged = false
+    private enum order{
+        case normal
+        case shuffle
+        case repeatItem
+    }
+    private var orderToPlay = order.normal
     
     @IBOutlet weak private var itemTable: UITableView!
     
@@ -72,9 +78,10 @@ class musicLibraryController: UIViewController{
     @IBOutlet weak private var playerTitle: UILabel!
     @IBOutlet weak private var playerInfo: UILabel!
     @IBOutlet weak private var playerPlayButton: UIButton!
-    @IBOutlet weak private var playerCurrTime: UILabel! //not done
+    @IBOutlet weak private var playerCurrTime: UILabel!
     @IBOutlet weak private var playerTotTime: UILabel!
-    @IBOutlet weak private var playerProgress: UIProgressView! //not done
+    @IBOutlet weak private var playerProgress: UIProgressView!
+    @IBOutlet weak var playOrder: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -292,17 +299,27 @@ class musicLibraryController: UIViewController{
     
     @IBAction func playerNextButton(sender: AnyObject) {
         print("next pressed")
-        if firstPlay == true && (currentCellIndex+1) != player.getQueueCount(){ //if a song is in the "slot"
+        if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && orderToPlay == order.normal{ //if a song is in the "slot"
             currentCellIndex += 1
             player.playNext()
             unBoldPrevItem(currentCellIndex)
             updateMiniPlayer()
         }
+        else if firstPlay == true && orderToPlay == order.repeatItem{
+            player.skipToBeginning()
+        }
+        else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
+            currentCellIndex += 1
+            player.playNext()
+            unBoldPrevItem(currentCellIndex)
+            updateMiniPlayer()
+        }
+        
     }
     
     @IBAction func playerPrevButton(sender: AnyObject) {
         print("prev pressed")
-        if firstPlay == true && currentCellIndex != 0{
+        if firstPlay == true && currentCellIndex != 0 && orderToPlay == order.normal{
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
                 currentCellIndex += -1
                 player.playPrev()
@@ -313,8 +330,19 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
-        else{
+        else if firstPlay == true && orderToPlay == order.repeatItem{
             player.skipToBeginning()
+        }
+        else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
+            if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
+                currentCellIndex += -1
+                player.playPrev()
+                unBoldPrevItem(currentCellIndex)
+                updateMiniPlayer()
+            }
+            else{
+                player.skipToBeginning()
+            }
         }
     }
     
@@ -376,8 +404,16 @@ class musicLibraryController: UIViewController{
         if playerCurrTime.text == playerTotTime.text{
             print("trackshift")
             timer?.invalidate()
-            player.pause()
-            if firstPlay == true && (currentCellIndex+1) != player.getQueueCount(){ //if a song is in the "slot"
+            if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && orderToPlay == order.normal{ //if a song is in the "slot"
+                currentCellIndex += 1
+                player.playNext()
+                unBoldPrevItem(currentCellIndex)
+                updateMiniPlayer()
+            }
+            else if firstPlay == true && orderToPlay == order.repeatItem{
+                player.skipToBeginning()
+            }
+            else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
                 currentCellIndex += 1
                 player.playNext()
                 unBoldPrevItem(currentCellIndex)
@@ -386,6 +422,32 @@ class musicLibraryController: UIViewController{
             else{
                 player.pause()
                 //move to next album or next artist
+            }
+            timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+        }
+    }
+    
+    @IBAction func playOrderChanged(sender: AnyObject) {
+        print("order changed")
+        if playOrder.imageView!.image == UIImage(named: "arrows.png"){ //normal
+            print("to shuffle")
+            orderToPlay = order.shuffle
+            if let image = UIImage(named: "arrows-1.png") {
+                playOrder.setImage(image, forState: .Normal)
+            }
+        }
+        else if playOrder.imageView!.image == UIImage(named: "arrows-1.png"){ //shuffle
+            print("to repeat")
+            orderToPlay = order.repeatItem
+            if let image = UIImage(named: "exchange-arrows.png") {
+                playOrder.setImage(image, forState: .Normal)
+            }
+        }
+        else if playOrder.imageView!.image == UIImage(named: "exchange-arrows.png"){ //repeat
+            print("to normal")
+            orderToPlay = order.normal
+            if let image = UIImage(named: "arrows.png") {
+                playOrder.setImage(image, forState: .Normal)
             }
         }
     }
