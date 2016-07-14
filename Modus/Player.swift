@@ -18,12 +18,14 @@ class Player{
     init(){
         audio.pause()
         audio.nowPlayingItem = nil
+        print("Player initialized")
     }
     
     func setQueue(queue: [MPMediaItem]){
         mediaItems = queue
         itemCollection = MPMediaItemCollection(items: mediaItems)
         audio.setQueueWithItemCollection(itemCollection)
+        print("Player queue set")
     }
     
     func isLibraryEmpty() -> Bool{

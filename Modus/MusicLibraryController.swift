@@ -87,7 +87,7 @@ class musicLibraryController: UIViewController{
         super.viewDidLoad()
         retreiveData()
         syncLibrary()
-        if isLibraryEmpty(){
+        if musicQueue.isEmpty{
             return
         }
         setupPlayer()
