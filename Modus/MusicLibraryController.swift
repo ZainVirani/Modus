@@ -194,6 +194,7 @@ class musicLibraryController: UIViewController{
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
             cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
             cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+            cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
             playerArtwork.image = cell.artwork.image
             playerTitle.text = cell.itemTitle.text
             playerInfo.text = cell.itemInfo.text
@@ -352,6 +353,7 @@ class musicLibraryController: UIViewController{
         if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
             prevCell.itemTitle.font = UIFont.systemFontOfSize(17)
             prevCell.itemInfo.font = UIFont.systemFontOfSize(17)
+            prevCell.itemDuration.font = UIFont.systemFontOfSize(15)
             previousCellIndex = itemIndex
         }
     }
@@ -423,12 +425,14 @@ extension musicLibraryController: UITableViewDataSource {
             print("Resync Necessary: T")
         }
         
+        cell.itemDuration.text = stringFromTimeInterval(item.playbackDuration)
+        
         if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
             if let albumInfo = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
-                cell.itemInfo.text = "\(artistInfo) - \(albumInfo) - \(stringFromTimeInterval(item.playbackDuration))"
+                cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
             }
             else{
-                cell.itemInfo.text = "\(artistInfo) - \(stringFromTimeInterval(item.playbackDuration))"
+                cell.itemInfo.text = "\(artistInfo)"
             }
         }
         else{
@@ -451,6 +455,7 @@ extension musicLibraryController: UITableViewDataSource {
         if player.getNowPlayingItem()?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
             cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
             cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+            cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
             playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
             playerArtwork.image = cell.artwork.image
             playerTitle.text = cell.itemTitle.text
@@ -459,6 +464,7 @@ extension musicLibraryController: UITableViewDataSource {
         else{
             cell.itemTitle.font = UIFont.systemFontOfSize(17)
             cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
         }
         
         return cell
