@@ -86,7 +86,11 @@ class musicLibraryController: UIViewController{
                     realm.add(newAppData)
                 }
                 print("app data created")
-
+                let alertController = UIAlertController(title: "modus", message:
+                    "It seems you are new to modus! Welcome.\nCurrently, the tag editor is under maintenance.\nHowever, feel free to use modus as your next great music player!\n Swipe up on the mini player in the library to access the full player, and then click the artwork to show lyrics. Swipe artwork down to go back to the library.", preferredStyle: UIAlertControllerStyle.Alert)
+                alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                
+                self.presentViewController(alertController, animated: true, completion: nil)
             }
             else{
                 oldSongCount = data[0].value //retrieve old
@@ -164,6 +168,7 @@ class musicLibraryController: UIViewController{
     func cellTap(sender: AnyObject) {
         print("cell pressed")
         currentItem = sender.view.tag
+        player.skipToBeginning()
         let itemIndex = playItem(currentItem)
         if previousItem != itemIndex{
             unBoldPrevItem(itemIndex)
@@ -352,7 +357,7 @@ class musicLibraryController: UIViewController{
         })
     }
     
-    @IBAction func closeFullPlayer(segue: UIStoryboardSegue){
+    @IBAction func unwindFromOtherScreen(segue: UIStoryboardSegue){
         
     }
 }
@@ -382,20 +387,6 @@ extension musicLibraryController: UITableViewDataSource {
   
         if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
             cell.itemTitle.text = titleOfItem
-            if player.nowPlayingItem?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
-                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-                playerTotTime.text = stringFromTimeInterval((player.nowPlayingItem?.playbackDuration)!)
-                currentItem = indexPath.row
-                previousItem = indexPath.row
-                playerArtwork.image = cell.artwork.image
-                playerTitle.text = cell.itemTitle.text
-                playerInfo.text = cell.itemInfo.text
-            }
-            else{
-                cell.itemTitle.font = UIFont.systemFontOfSize(17)
-                cell.itemInfo.font = UIFont.systemFontOfSize(17)
-            }
         }
         else{
             print("Resync Necessary: T")
@@ -404,7 +395,12 @@ extension musicLibraryController: UITableViewDataSource {
         
         if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
             if let albumInfo = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
-                cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
+                if let timeInfo = stringFromTimeInterval(item.playbackDuration) as? String{
+                    cell.itemInfo.text = "\(artistInfo) - \(albumInfo) - \(timeInfo)"
+                }
+                else{
+                    cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
+                }
             }
             else{
                 cell.itemInfo.text = "\(artistInfo)"
@@ -429,6 +425,21 @@ extension musicLibraryController: UITableViewDataSource {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.cellTap(_:)))
         
         cell.addGestureRecognizer(tapGesture)
+        
+        if player.nowPlayingItem?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
+            cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+            cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+            playerTotTime.text = stringFromTimeInterval((player.nowPlayingItem?.playbackDuration)!)
+            currentItem = indexPath.row
+            previousItem = indexPath.row
+            playerArtwork.image = cell.artwork.image
+            playerTitle.text = cell.itemTitle.text
+            playerInfo.text = cell.itemInfo.text
+        }
+        else{
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+        }
         
         return cell
     }
