@@ -6,35 +6,6 @@
 //  Copyright © 2016 Modus Applications. All rights reserved.
 //
 
-/*
- TODO
- print songs in table sorted by track
- play songs with button
- pause, next, prev, progress bar, retreive time
- sort by album, artist, genre, playlist, songs: recently played, play count, sort by release date
- tag editor
- import tags
- full music player
- volume control
- search (see makestagram part 2)
- cache collections and table data for switching views
- cancel search
- */
-/*  TODO
- gather all songs
- sort by artist
- sort by album
- sort by song
- extract artwork, time
- place in table
- 
- FORNOW
- gather all songs
- sort however (currently sorts alphabetically)
- extract artwork
- place in table
- */
-
 import Foundation
 import UIKit
 import RealmSwift
@@ -141,6 +112,7 @@ class musicLibraryController: UIViewController{
         sortType.selectedSegmentIndex = 4
         subSortType.selectedSegmentIndex = 0
         musicQueue = MPMediaQuery.songsQuery().items!
+        sortChanged = false
         reSort(&musicQueue)
         if isLibraryEmpty(){
             return
@@ -191,7 +163,6 @@ class musicLibraryController: UIViewController{
             playerPlayButton.setImage(image, forState: .Normal)
         }
         print("currently playing \(player.getNowPlayingItem()?.title)")
-        
         let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
             cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
@@ -204,15 +175,16 @@ class musicLibraryController: UIViewController{
     }
     
     @IBAction func changeSort(sender: AnyObject) {
+        sortChanged = true
         reSort(&musicQueue)
     }
     
     @IBAction func changeSubSort(sender: AnyObject) {
+        sortChanged = true
         reSort(&musicQueue)
     }
 
     func reSort(inout query: [MPMediaItem]){
-        sortChanged = true
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{
