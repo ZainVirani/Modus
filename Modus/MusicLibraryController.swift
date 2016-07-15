@@ -142,12 +142,7 @@ class musicLibraryController: UIViewController{
         subSortType.selectedSegmentIndex = 0
         musicQueue = MPMediaQuery.songsQuery().items!
         reSort(&musicQueue)
-        if musicQueue.isEmpty{
-            let alertController = UIAlertController(title: "modus", message:
-                "No items found.\nMake sure there are music files on the device, then reload the app.", preferredStyle: UIAlertControllerStyle.Alert)
-            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
-            
-            self.presentViewController(alertController, animated: true, completion: nil)
+        if isLibraryEmpty(){
             return
         }
         newSongCount = musicQueue.count - oldSongCount
@@ -305,9 +300,6 @@ class musicLibraryController: UIViewController{
             unBoldPrevItem(currentCellIndex)
             updateMiniPlayer()
         }
-        else if firstPlay == true && orderToPlay == order.repeatItem{
-            player.skipToBeginning()
-        }
         else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
             currentCellIndex += 1
             player.playNext()
@@ -329,9 +321,6 @@ class musicLibraryController: UIViewController{
             else{
                 player.skipToBeginning()
             }
-        }
-        else if firstPlay == true && orderToPlay == order.repeatItem{
-            player.skipToBeginning()
         }
         else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4){

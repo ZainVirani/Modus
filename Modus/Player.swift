@@ -71,12 +71,13 @@ class Player{
         if index < 0 || index > mediaItems.count - 1 {
             audio.nowPlayingItem = nil
             audio.pause()
+            print("index not valid, player paused")
         }
         else{
             audio.nowPlayingItem = itemCollection.items[index]
             itemIndex = index
+            audio.play()
         }
-        audio.play()
     }
     
     func getRawState() -> Int{
