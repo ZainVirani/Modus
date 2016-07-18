@@ -18,6 +18,8 @@ class musicLibraryController: UIViewController{
     private var externalInputCheckTimer: NSTimer?
     private var player = Player()
     private var musicQueue: [MPMediaItem] = []
+    private var albumQueue: [MPMediaItem] = []
+    private var artistQueue: [MPMediaItem] = []
     
     private var newSongCount = 0 //don't save to Realm
     private var oldSongCount = 0 //save to Realm on each sync
@@ -38,7 +40,13 @@ class musicLibraryController: UIViewController{
         case shuffle
         case repeatItem
     }
+    private enum itemType{
+        case song
+        case album
+        case artist
+    }
     private var orderToPlay = order.normal
+    private var itemToDisplay = itemType.song
     
     @IBOutlet weak private var itemTable: UITableView!
     
@@ -78,7 +86,7 @@ class musicLibraryController: UIViewController{
                 }
                 print("app data created")
                 let alertController = UIAlertController(title: "modus", message:
-                    "It seems you are new to modus! Welcome.\nCurrently, the tag editor is under maintenance.\nHowever, feel free to use modus as your next great music player!\n Swipe up on the mini player in the library to access the full player, and then click the artwork to show lyrics. Swipe artwork down to go back to the library.", preferredStyle: UIAlertControllerStyle.Alert)
+                    "It seems you are new to modus! Welcome.\nCurrently, the tag editor is under maintenance.\nSwipe up on the mini player in the library to access the full player, and then click the artwork to show lyrics. Swipe artwork down to go back to the library.", preferredStyle: UIAlertControllerStyle.Alert)
                 alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
                 
                 self.presentViewController(alertController, animated: true, completion: nil)
@@ -112,6 +120,8 @@ class musicLibraryController: UIViewController{
         sortType.selectedSegmentIndex = 4
         subSortType.selectedSegmentIndex = 0
         musicQueue = MPMediaQuery.songsQuery().items!
+        albumQueue = MPMediaQuery.albumsQuery().items!
+        artistQueue = MPMediaQuery.artistsQuery().items!
         sortChanged = false
         reSort(&musicQueue)
         if isLibraryEmpty(){
@@ -135,8 +145,8 @@ class musicLibraryController: UIViewController{
         })
     }
     
-    func cellTap(sender: AnyObject) {
-        print("cell pressed")
+    func songTap(sender: AnyObject) {
+        print("song chosen")
         currentCellIndex = sender.view.tag
         playItem(currentCellIndex)
         if previousCellIndex != currentCellIndex{
@@ -146,6 +156,16 @@ class musicLibraryController: UIViewController{
             oldPlayerItem = player.getNowPlayingItem()?.persistentID
             firstPlay = true
         }
+    }
+    
+    func albumTap(sender: AnyObject){
+        print("album chosen")
+        
+    }
+    
+    func artistTap(sender: AnyObject){
+        print("arist chosen")
+        
     }
     
     func playItem(itemIndex: Int){
@@ -176,37 +196,131 @@ class musicLibraryController: UIViewController{
     
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
-        reSort(&musicQueue)
+        let sort = sortType.selectedSegmentIndex
+        if sort == 4{
+            reSort(&musicQueue)
+        }
+        else if sort == 3{
+            reSort(&albumQueue)
+        }
+        else if sort == 2{
+            reSort(&artistQueue)
+        }
+        else if sort == 1{
+            
+        }
+        else if sort == 0{
+            
+        }
     }
     
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
-        reSort(&musicQueue)
+        let subSort = subSortType.selectedSegmentIndex
+        if subSort == 4{
+            reSort(&musicQueue)
+        }
+        else if subSort == 3{
+            reSort(&albumQueue)
+        }
+        else if subSort == 2{
+            reSort(&artistQueue)
+        }
+        else if subSort == 1{
+            
+        }
+        else if subSort == 0{
+            
+        }
     }
 
     func reSort(inout query: [MPMediaItem]){
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
-        if sort == 4{
+        if sort == 4{ //song
+            itemToDisplay = itemType.song
+            subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
+            subSortType.setTitle("Playcount", forSegmentAtIndex: 0)
             if subSort == 0{
                 query.sortInPlace{
                     return $0.title < $1.title
                 }
                 print("sort: song alpha")
-                reloadTableInMainThread()
-                return
             }
             else if subSort == 1{
                 query.sortInPlace{
                     return $0.playCount > $1.playCount
                 }
                 print("sort: song playcount")
-                reloadTableInMainThread()
-                return
             }
+            reloadTableInMainThread()
+            return
+        }
+        if sort == 3{ //album
+            itemToDisplay = itemType.album
+            print("# of albums: \(query.count)")
+            subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
+            subSortType.setTitle("Artist/Date", forSegmentAtIndex: 0)
+            if subSort == 0{
+                query.sortInPlace{
+                    return $0.albumTitle < $1.albumTitle
+                }
+                print("sort: album alpha")
+            }
+            else if subSort == 1{
+                query.sortInPlace{
+                    if $0.artist == $1.artist{
+                        return $0.releaseDate!.compare($1.releaseDate!) == NSComparisonResult.OrderedAscending
+                    }
+                    else{
+                        return $0.artist < $1.artist
+                    }
+                }
+                print("sort: album artist")
+            }
+            reloadTableInMainThread()
+            return
+        }
+        if sort == 2{
+            itemToDisplay = itemType.artist
+            query = MPMediaQuery.artistsQuery().items!
+            subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
+            subSortType.setTitle("Reverse Alpha", forSegmentAtIndex: 0)
+            if subSort == 0{
+                query.sortInPlace{
+                    return $0.artist < $1.artist
+                }
+                print("sort: artist alpha")
+            }
+            else if subSort == 1{
+                query.sortInPlace{
+                    return $0.artist > $1.artist
+                }
+                print("sort: artist reverse")
+            }
+            reloadTableInMainThread()
+            return
+        }
+        if sort == 1{ //recent NOT DONE
+            itemToDisplay = itemType.song
+            query = MPMediaQuery.songsQuery().items!
+            subSortType.setTitle("Recent", forSegmentAtIndex: 0)
+            subSortType.setTitle("Playcount", forSegmentAtIndex: 0)
+            if subSort == 0{
+                
+                print("sort: recent")
+            }
+            else if subSort == 1{
+                
+                print("sort: recent playcount")
+            }
+            reloadTableInMainThread()
+            return
+        }
+        if sort == 0{ //playlist
+            
         }
         print("re-sort unknown")
-        reloadTableInMainThread()
     }
     
     @IBAction func syncLibButton(sender: AnyObject) {
@@ -389,23 +503,22 @@ class musicLibraryController: UIViewController{
     }
     
     @IBAction func playOrderChanged(sender: AnyObject) {
-        print("order changed")
-        if playOrder.imageView!.image == UIImage(named: "arrows.png"){ //normal
-            print("to shuffle")
+        if orderToPlay == order.normal{ //normal
+            print("order changed to shuffle")
             orderToPlay = order.shuffle
             if let image = UIImage(named: "arrows-1.png") {
                 playOrder.setImage(image, forState: .Normal)
             }
         }
-        else if playOrder.imageView!.image == UIImage(named: "arrows-1.png"){ //shuffle
-            print("to repeat")
+        else if orderToPlay == order.shuffle{ //shuffle
+            print("order changed to repeat")
             orderToPlay = order.repeatItem
             if let image = UIImage(named: "exchange-arrows.png") {
                 playOrder.setImage(image, forState: .Normal)
             }
         }
-        else if playOrder.imageView!.image == UIImage(named: "exchange-arrows.png"){ //repeat
-            print("to normal")
+        else if orderToPlay == order.repeatItem{ //repeat
+            print("order changed to normal")
             orderToPlay = order.normal
             if let image = UIImage(named: "arrows.png") {
                 playOrder.setImage(image, forState: .Normal)
@@ -425,69 +538,121 @@ extension musicLibraryController: UITableViewDataSource {
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        print("# of cells: \(musicQueue.count)")
         return musicQueue.count
     }
     
-    // 2
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCellWithIdentifier("itemCell", forIndexPath: indexPath) as! itemCell
-        
-        // 1
         let row = indexPath.row
         
-        // 2
-        let item = musicQueue[row]
-        
-        // 3
-  
-        if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
-            cell.itemTitle.text = titleOfItem
-        }
-        else{
-            print("Resync Necessary: T")
-        }
-        
-        cell.itemDuration.text = stringFromTimeInterval(item.playbackDuration)
-        
-        if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
-            if let albumInfo = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
-                cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
+        if itemToDisplay == itemType.song{ //song
+            let item = musicQueue[row]
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
+                cell.itemTitle.text = titleOfItem
             }
             else{
-                cell.itemInfo.text = "\(artistInfo)"
+                print("Resync Necessary: T")
+            }
+            cell.itemDuration.text = stringFromTimeInterval(item.playbackDuration)
+            
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+                if let albumInfo = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
+                    cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
+                }
+                else{
+                    cell.itemInfo.text = "\(artistInfo)"
+                }
+            }
+            else{
+                print("Resync Necessary: A - A")
+            }
+            
+            if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
+                cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
+                //print("artwork extracted")
+            }
+            else{
+                //default artwork
+            }
+            
+            cell.tag = indexPath.row
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.songTap(_:)))
+            cell.addGestureRecognizer(tapGesture)
+            
+            if player.getNowPlayingItem()?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
+                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+                cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
+                playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
+                playerArtwork.image = cell.artwork.image
+                playerTitle.text = cell.itemTitle.text
+                playerInfo.text = cell.itemInfo.text
+            }
+            else{
+                cell.itemTitle.font = UIFont.systemFontOfSize(17)
+                cell.itemInfo.font = UIFont.systemFontOfSize(17)
+                cell.itemDuration.font = UIFont.systemFontOfSize(15)
             }
         }
-        else{
-            print("Resync Necessary: A - A")
-        }
-        
-        if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
-            cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
-            //print("artwork extracted")
-        }
-        else{
-            //default artwork
-        }
+        else if itemToDisplay == itemType.album{ //album
+            let item = albumQueue[row]
+            cell.itemDuration.text = ""
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
+                cell.itemTitle.text = titleOfItem
+            }
+            else{
+                print("Resync Necessary: T")
+            }
+            
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+                if let yearNumber: Int = (item.valueForKey("year") as? Int)! {
+                    if yearNumber != 0{
+                        cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
+                    }
+                }
+                else{
+                    cell.itemInfo.text = "\(artistInfo)"
+                }
+            }
+            else{
+                print("Resync Necessary: A - A")
+            }
+            
+            if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
+                cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
+                //print("artwork extracted")
+            }
+            else{
+                //default artwork
+            }
 
-        cell.tag = indexPath.row
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.cellTap(_:)))
-        
-        cell.addGestureRecognizer(tapGesture)
-        
-        if player.getNowPlayingItem()?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
-            cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-            cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-            cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
-            playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
-            playerArtwork.image = cell.artwork.image
-            playerTitle.text = cell.itemTitle.text
-            playerInfo.text = cell.itemInfo.text
+            cell.tag = indexPath.row
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.albumTap(_:)))
+            cell.addGestureRecognizer(tapGesture)
         }
-        else{
-            cell.itemTitle.font = UIFont.systemFontOfSize(17)
-            cell.itemInfo.font = UIFont.systemFontOfSize(17)
-            cell.itemDuration.font = UIFont.systemFontOfSize(15)
+        else if itemToDisplay == itemType.artist{ //artist
+            let item = artistQueue[row]
+            cell.itemDuration.text = ""
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+                cell.itemTitle.text = titleOfItem
+            }
+            else{
+                print("Resync Necessary: T")
+            }
+            
+            /*if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){ //artist artwork
+                cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
+                //print("artwork extracted")
+            }
+            else{
+                //default artwork
+            }*/
+
+            cell.tag = indexPath.row
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.artistTap(_:)))
+            cell.addGestureRecognizer(tapGesture)
         }
         
         return cell

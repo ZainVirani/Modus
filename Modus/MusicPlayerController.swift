@@ -10,9 +10,12 @@ import UIKit
 
 class MusicPlayerController: UIViewController {
 
+    @IBOutlet weak var artworkLyricDisplay: UIImageView!
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         // Do any additional setup after loading the view.
     }
 
