@@ -20,6 +20,8 @@ class musicLibraryController: UIViewController{
     private var musicQueue: [MPMediaItem] = []
     private var albumQueue: [MPMediaItem] = []
     private var artistQueue: [MPMediaItem] = []
+    private var subAlbumQueue: [MPMediaItem] = []
+    private var subMusicQueue: [MPMediaItem] = []
     
     private var newSongCount = 0 //don't save to Realm
     private var oldSongCount = 0 //save to Realm on each sync
@@ -44,6 +46,8 @@ class musicLibraryController: UIViewController{
         case song
         case album
         case artist
+        case subAlbum
+        case subSong
     }
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
@@ -191,20 +195,80 @@ class musicLibraryController: UIViewController{
     }
     
     func albumTap(sender: AnyObject){
+        subSortType.setEnabled(false, forSegmentAtIndex: 0)
+        subSortType.setTitle("", forSegmentAtIndex: 0)
+        subSortType.setEnabled(false, forSegmentAtIndex: 1)
+        subSortType.setTitle("", forSegmentAtIndex: 1)
         print("album chosen")
-        
+        let indexpath = NSIndexPath(forRow: sender.view.tag, inSection: 0)
+        if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
+            subMusicQueue = musicQueue.filter { (item) -> Bool in
+                return item.albumTitle == cell.itemTitle.text
+            }
+        }
+        print("sub-music count: \(subMusicQueue.count)")
+        subMusicQueue.sortInPlace{
+            if $0.albumTrackNumber == 0 || $1.albumTrackNumber == 0{
+                print("track number error in sorting")
+                let alertController = UIAlertController(title: "modus", message:
+                    "Some track number information could not be retrieved.", preferredStyle: UIAlertControllerStyle.Alert)
+                alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                
+                self.presentViewController(alertController, animated: true, completion: nil)
+                
+                return $0.albumTitle < $1.albumTitle
+            }
+            return $0.albumTrackNumber < $1.albumTrackNumber
+        }
+        itemToDisplay = itemType.subSong
+        reloadTableInMainThread()
     }
     
     func artistTap(sender: AnyObject){
+        subSortType.setEnabled(false, forSegmentAtIndex: 0)
+        subSortType.setTitle("", forSegmentAtIndex: 0)
+        subSortType.setEnabled(false, forSegmentAtIndex: 1)
+        subSortType.setTitle("", forSegmentAtIndex: 1)
         print("arist chosen")
-        
+        let indexpath = NSIndexPath(forRow: sender.view.tag, inSection: 0)
+        if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
+            subAlbumQueue = albumQueue.filter { (item) -> Bool in
+                return item.artist == cell.itemTitle.text
+            }
+        }
+        print("sub-album count: \(subAlbumQueue.count)")
+        subAlbumQueue.sortInPlace{
+            if let releaseDate1 = $0.releaseDate , let releaseDate2 = $1.releaseDate{
+                return releaseDate1.compare(releaseDate2) == NSComparisonResult.OrderedAscending
+            }
+            else if let yearNumber1: Int = ($0.valueForKey("year") as? Int)! , let yearNumber2: Int = ($1.valueForKey("year") as? Int)!{
+                return yearNumber1 < yearNumber2
+            }
+            else{
+                print("release date error in sorting")
+                let alertController = UIAlertController(title: "modus", message:
+                    "Some release date information could not be retrieved.", preferredStyle: UIAlertControllerStyle.Alert)
+                alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                
+                self.presentViewController(alertController, animated: true, completion: nil)
+                
+                return $0.albumTitle < $1.albumTitle
+            }
+        }
+        itemToDisplay = itemType.subAlbum
+        reloadTableInMainThread()
     }
     
     func playItem(itemIndex: Int){
         timer?.invalidate()
         //check if new queue needed
         if sortChanged{
-            player.setQueue(musicQueue) //set player queue to resorted queue
+            if itemToDisplay == itemType.song{
+                player.setQueue(musicQueue) //set player queue to resorted queue
+            }
+            else if itemToDisplay == itemType.subSong{
+                player.setQueue(subMusicQueue) //set player queue to resorted queue
+            }
             sortChanged = false
         }
         player.setNowplayingItem(itemIndex)
@@ -228,6 +292,8 @@ class musicLibraryController: UIViewController{
     
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
+        subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
             reSort(&musicQueue)
@@ -248,6 +314,8 @@ class musicLibraryController: UIViewController{
     
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
+        subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
             reSort(&musicQueue)
@@ -315,7 +383,7 @@ class musicLibraryController: UIViewController{
                             
                             self.presentViewController(alertController, animated: true, completion: nil)
 
-                            return $0.artist < $1.artist
+                            return $0.albumTitle < $1.albumTitle
                         }
                     }
                     else{
@@ -348,7 +416,6 @@ class musicLibraryController: UIViewController{
         }
         if sort == 1{ //recent NOT DONE
             itemToDisplay = itemType.song
-            query = MPMediaQuery.songsQuery().items!
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
             subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
             if subSort == 0{
@@ -364,7 +431,6 @@ class musicLibraryController: UIViewController{
         }
         if sort == 0{ //playlist NOT DONE
             itemToDisplay = itemType.song
-            query = MPMediaQuery.songsQuery().items!
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
             subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
             if subSort == 0{
@@ -439,7 +505,7 @@ class musicLibraryController: UIViewController{
     
     @IBAction func playerNextButton(sender: AnyObject) {
         print("next pressed")
-        if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && orderToPlay == order.normal{ //if a song is in the "slot"
+        if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && (orderToPlay == order.normal || orderToPlay == order.repeatItem){ //if a song is in the "slot"
             currentCellIndex += 1
             player.playNext()
             unBoldPrevItem(currentCellIndex)
@@ -456,7 +522,7 @@ class musicLibraryController: UIViewController{
     
     @IBAction func playerPrevButton(sender: AnyObject) {
         print("prev pressed")
-        if firstPlay == true && currentCellIndex != 0 && orderToPlay == order.normal{
+        if firstPlay == true && currentCellIndex != 0 && (orderToPlay == order.normal || orderToPlay == order.repeatItem){
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
                 currentCellIndex += -1
                 player.playPrev()
@@ -603,8 +669,18 @@ extension musicLibraryController: UITableViewDataSource {
         else if itemToDisplay == itemType.album{
             return albumQueue.count
         }
-        else{
+        else if itemToDisplay == itemType.artist{
             return artistQueue.count
+        }
+        else if itemToDisplay == itemType.subAlbum{
+            return subAlbumQueue.count
+        }
+        else if itemToDisplay == itemType.subSong{
+            return subMusicQueue.count
+        }
+        else{
+            print("#ROWSINSECTION ERROR")
+            return 0
         }
     }
     
@@ -754,7 +830,97 @@ extension musicLibraryController: UITableViewDataSource {
             let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.artistTap(_:)))
             cell.addGestureRecognizer(tapGesture)
         }
-        
+        else if itemToDisplay == itemType.subAlbum{
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
+            let item = subAlbumQueue[row]
+            cell.itemDuration.text = ""
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
+                cell.itemTitle.text = titleOfItem
+            }
+            else{
+                print("Resync Necessary: T")
+            }
+            
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+                if let yearNumber: Int = (item.valueForKey("year") as? Int)!{
+                    if yearNumber != 0{
+                        cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
+                    }
+                    else{
+                        cell.itemInfo.text = "\(artistInfo)"
+                    }
+                }
+                else{
+                    cell.itemInfo.text = "\(artistInfo)"
+                }
+            }
+            else{
+                print("Resync Necessary: A - A")
+            }
+            
+            if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
+                cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
+                //print("artwork extracted")
+            }
+            else{
+                cell.artwork.image = UIImage(named: "defaultArtwork.png")!
+            }
+            
+            cell.tag = indexPath.row
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.albumTap(_:)))
+            cell.addGestureRecognizer(tapGesture)
+        }
+        else if itemToDisplay == itemType.subSong{ //song
+            let item = subMusicQueue[row]
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
+                cell.itemTitle.text = titleOfItem
+            }
+            else{
+                print("Resync Necessary: T")
+            }
+            cell.itemDuration.text = stringFromTimeInterval(item.playbackDuration)
+            
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+                if let albumInfo = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
+                    cell.itemInfo.text = "\(artistInfo) - \(albumInfo)"
+                }
+                else{
+                    cell.itemInfo.text = "\(artistInfo)"
+                }
+            }
+            else{
+                print("Resync Necessary: A - A")
+            }
+            
+            if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
+                cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
+                //print("artwork extracted")
+            }
+            else{
+                cell.artwork.image = UIImage(named: "defaultArtwork.png")!
+            }
+            
+            cell.tag = indexPath.row
+            let tapGesture = UITapGestureRecognizer(target: self, action: #selector(musicLibraryController.songTap(_:)))
+            cell.addGestureRecognizer(tapGesture)
+            
+            if player.getNowPlayingItem()?.persistentID == item.persistentID && firstPlay == true{ //bold playing item on reSort
+                cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+                cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+                cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
+                playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
+                playerArtwork.image = cell.artwork.image
+                playerTitle.text = cell.itemTitle.text
+                playerInfo.text = cell.itemInfo.text
+            }
+            else{
+                cell.itemTitle.font = UIFont.systemFontOfSize(17)
+                cell.itemInfo.font = UIFont.systemFontOfSize(17)
+                cell.itemDuration.font = UIFont.systemFontOfSize(15)
+            }
+        }
         return cell
     }
 }
