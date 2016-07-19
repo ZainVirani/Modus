@@ -52,8 +52,8 @@
                                                     <constraint firstAttribute="height" constant="44" id="V93-bS-Gz4"/>
                                                 </constraints>
                                                 <segments>
-                                                    <segment title="Playlists"/>
-                                                    <segment title="Recent"/>
+                                                    <segment title="Playlists" enabled="NO"/>
+                                                    <segment title="Recent" enabled="NO"/>
                                                     <segment title="Artist"/>
                                                     <segment title="Album"/>
                                                     <segment title="Songs"/>

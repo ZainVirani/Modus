@@ -121,7 +121,11 @@ class musicLibraryController: UIViewController{
         subSortType.selectedSegmentIndex = 0
         musicQueue = MPMediaQuery.songsQuery().items!
         albumQueue = MPMediaQuery.albumsQuery().items!
+        removeDuplicateAlbums(&albumQueue)
+        print("album count: \(albumQueue.count)")
         artistQueue = MPMediaQuery.artistsQuery().items!
+        removeDuplicateArtists(&artistQueue)
+        print("artist count: \(artistQueue.count)")
         sortChanged = false
         reSort(&musicQueue)
         if isLibraryEmpty(){
@@ -136,6 +140,34 @@ class musicLibraryController: UIViewController{
         try! realm.write() {
             appData![0].value = oldSongCount
             appData![0].modificationTime = NSDate()
+        }
+    }
+    
+    func removeDuplicateAlbums(inout values: [MPMediaItem]){
+        var j = 1
+        var h = 0
+        for _ in 0...values.count-2{
+            if values[h].albumPersistentID == values[h+1].albumPersistentID{
+                values.removeAtIndex(h)
+                j += 1
+            }
+            else{
+                h += 1
+            }
+        }
+    }
+    
+    func removeDuplicateArtists(inout values: [MPMediaItem]){
+        var j = 1
+        var h = 0
+        for _ in 0...values.count-2{
+            if values[h].artistPersistentID == values[h+1].artistPersistentID{
+                values.removeAtIndex(h)
+                j += 1
+            }
+            else{
+                h += 1
+            }
         }
     }
     
@@ -240,7 +272,7 @@ class musicLibraryController: UIViewController{
         if sort == 4{ //song
             itemToDisplay = itemType.song
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
-            subSortType.setTitle("Playcount", forSegmentAtIndex: 0)
+            subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
             if subSort == 0{
                 query.sortInPlace{
                     return $0.title < $1.title
@@ -258,9 +290,8 @@ class musicLibraryController: UIViewController{
         }
         if sort == 3{ //album
             itemToDisplay = itemType.album
-            print("# of albums: \(query.count)")
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
-            subSortType.setTitle("Artist/Date", forSegmentAtIndex: 0)
+            subSortType.setTitle("Artist/Date", forSegmentAtIndex: 1)
             if subSort == 0{
                 query.sortInPlace{
                     return $0.albumTitle < $1.albumTitle
@@ -283,9 +314,8 @@ class musicLibraryController: UIViewController{
         }
         if sort == 2{
             itemToDisplay = itemType.artist
-            query = MPMediaQuery.artistsQuery().items!
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
-            subSortType.setTitle("Reverse Alpha", forSegmentAtIndex: 0)
+            subSortType.setTitle("Reverse Alpha", forSegmentAtIndex: 1)
             if subSort == 0{
                 query.sortInPlace{
                     return $0.artist < $1.artist
@@ -305,7 +335,7 @@ class musicLibraryController: UIViewController{
             itemToDisplay = itemType.song
             query = MPMediaQuery.songsQuery().items!
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
-            subSortType.setTitle("Playcount", forSegmentAtIndex: 0)
+            subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
             if subSort == 0{
                 
                 print("sort: recent")
@@ -317,8 +347,22 @@ class musicLibraryController: UIViewController{
             reloadTableInMainThread()
             return
         }
-        if sort == 0{ //playlist
-            
+        if sort == 0{ //playlist NOT DONE
+            itemToDisplay = itemType.song
+            query = MPMediaQuery.songsQuery().items!
+            subSortType.setTitle("Recent", forSegmentAtIndex: 0)
+            subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
+            if subSort == 0{
+                
+                print("sort: recent")
+            }
+            else if subSort == 1{
+                
+                print("sort: recent playcount")
+            }
+            reloadTableInMainThread()
+            return
+
         }
         print("re-sort unknown")
     }
@@ -538,8 +582,15 @@ extension musicLibraryController: UITableViewDataSource {
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        print("# of cells: \(musicQueue.count)")
-        return musicQueue.count
+        if itemToDisplay == itemType.song{
+            return musicQueue.count
+        }
+        else if itemToDisplay == itemType.album{
+            return albumQueue.count
+        }
+        else{
+            return artistQueue.count
+        }
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
@@ -574,7 +625,7 @@ extension musicLibraryController: UITableViewDataSource {
                 //print("artwork extracted")
             }
             else{
-                //default artwork
+                cell.artwork.image = UIImage(named: "defaultArtwork.png")!
             }
             
             cell.tag = indexPath.row
@@ -607,9 +658,12 @@ extension musicLibraryController: UITableViewDataSource {
             }
             
             if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
-                if let yearNumber: Int = (item.valueForKey("year") as? Int)! {
+                if let yearNumber: Int = (item.valueForKey("year") as? Int)!{
                     if yearNumber != 0{
-                        cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
+                    cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
+                    }
+                    else{
+                        cell.itemInfo.text = "\(artistInfo)"
                     }
                 }
                 else{
@@ -625,7 +679,7 @@ extension musicLibraryController: UITableViewDataSource {
                 //print("artwork extracted")
             }
             else{
-                //default artwork
+                cell.artwork.image = UIImage(named: "defaultArtwork.png")!
             }
 
             cell.tag = indexPath.row
@@ -641,6 +695,31 @@ extension musicLibraryController: UITableViewDataSource {
             else{
                 print("Resync Necessary: T")
             }
+            
+            var albumCount = 0
+            var latestAlbumArtwork: UIImage = UIImage(named: "defaultArtwork.png")!
+            var latestAlbumDate: NSDate = NSDate.distantPast()
+            for i in 0...albumQueue.count-1{
+                if albumQueue[i].artist == item.artist{
+                    albumCount += 1
+                    if let albumDate = albumQueue[i].releaseDate{
+                        if albumDate.compare(latestAlbumDate) == NSComparisonResult.OrderedDescending{
+                            latestAlbumDate = albumQueue[i].releaseDate!
+                            if let itemArtwork = albumQueue[i].valueForProperty(MPMediaItemPropertyArtwork){
+                                latestAlbumArtwork = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))!
+                            }
+                        }
+                    }
+                    else{
+                        if let itemArtwork = albumQueue[i].valueForProperty(MPMediaItemPropertyArtwork){
+                            latestAlbumArtwork = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))!
+                        }
+                    }
+                }
+            }
+            cell.itemInfo.text = "Albums: \(albumCount)"
+            
+            cell.artwork.image = latestAlbumArtwork
             
             /*if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){ //artist artwork
                 cell.artwork.image = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))
