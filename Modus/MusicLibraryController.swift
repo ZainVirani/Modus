@@ -248,20 +248,20 @@ class musicLibraryController: UIViewController{
     
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
-        let subSort = subSortType.selectedSegmentIndex
-        if subSort == 4{
+        let sort = sortType.selectedSegmentIndex
+        if sort == 4{
             reSort(&musicQueue)
         }
-        else if subSort == 3{
+        else if sort == 3{
             reSort(&albumQueue)
         }
-        else if subSort == 2{
+        else if sort == 2{
             reSort(&artistQueue)
         }
-        else if subSort == 1{
+        else if sort == 1{
             
         }
-        else if subSort == 0{
+        else if sort == 0{
             
         }
     }
@@ -301,7 +301,22 @@ class musicLibraryController: UIViewController{
             else if subSort == 1{
                 query.sortInPlace{
                     if $0.artist == $1.artist{
-                        return $0.releaseDate!.compare($1.releaseDate!) == NSComparisonResult.OrderedAscending
+                        if let releaseDate1 = $0.releaseDate , let releaseDate2 = $1.releaseDate{
+                            return releaseDate1.compare(releaseDate2) == NSComparisonResult.OrderedAscending
+                        }
+                        else if let yearNumber1: Int = ($0.valueForKey("year") as? Int)! , let yearNumber2: Int = ($1.valueForKey("year") as? Int)!{
+                            return yearNumber1 < yearNumber2
+                        }
+                        else{
+                            print("release date error in sorting")
+                            let alertController = UIAlertController(title: "modus", message:
+                                "Some release date information could not be retrieved.", preferredStyle: UIAlertControllerStyle.Alert)
+                            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                            
+                            self.presentViewController(alertController, animated: true, completion: nil)
+
+                            return $0.artist < $1.artist
+                        }
                     }
                     else{
                         return $0.artist < $1.artist
@@ -648,6 +663,9 @@ extension musicLibraryController: UITableViewDataSource {
             }
         }
         else if itemToDisplay == itemType.album{ //album
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
             let item = albumQueue[row]
             cell.itemDuration.text = ""
             if let titleOfItem = item.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
@@ -687,6 +705,9 @@ extension musicLibraryController: UITableViewDataSource {
             cell.addGestureRecognizer(tapGesture)
         }
         else if itemToDisplay == itemType.artist{ //artist
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
             let item = artistQueue[row]
             cell.itemDuration.text = ""
             if let titleOfItem = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
