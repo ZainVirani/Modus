@@ -90,7 +90,7 @@ class musicLibraryController: UIViewController{
                 }
                 print("app data created")
                 let alertController = UIAlertController(title: "modus", message:
-                    "It seems you are new to modus! Welcome.\nCurrently, the tag editor is under maintenance.\nSwipe up on the mini player in the library to access the full player, and then click the artwork to show lyrics. Swipe artwork down to go back to the library.", preferredStyle: UIAlertControllerStyle.Alert)
+                    "It seems you are new to modus! Welcome.\nCurrently, the tag editor and full player are under maintenance.", preferredStyle: UIAlertControllerStyle.Alert)
                 alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
                 
                 self.presentViewController(alertController, animated: true, completion: nil)
@@ -199,6 +199,7 @@ class musicLibraryController: UIViewController{
         subSortType.setTitle("", forSegmentAtIndex: 0)
         subSortType.setEnabled(false, forSegmentAtIndex: 1)
         subSortType.setTitle("", forSegmentAtIndex: 1)
+        sortType.selectedSegmentIndex = -1
         print("album chosen")
         let indexpath = NSIndexPath(forRow: sender.view.tag, inSection: 0)
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
@@ -229,6 +230,7 @@ class musicLibraryController: UIViewController{
         subSortType.setTitle("", forSegmentAtIndex: 0)
         subSortType.setEnabled(false, forSegmentAtIndex: 1)
         subSortType.setTitle("", forSegmentAtIndex: 1)
+        sortType.selectedSegmentIndex = -1
         print("arist chosen")
         let indexpath = NSIndexPath(forRow: sender.view.tag, inSection: 0)
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
@@ -293,6 +295,7 @@ class musicLibraryController: UIViewController{
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.selectedSegmentIndex = 0
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
@@ -315,6 +318,7 @@ class musicLibraryController: UIViewController{
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.selectedSegmentIndex = 0
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
@@ -649,6 +653,10 @@ class musicLibraryController: UIViewController{
                 playOrder.setImage(image, forState: .Normal)
             }
         }
+    }
+    
+    func getNowPlayingItem() -> MPMediaItem?{
+        return player.getNowPlayingItem()
     }
     
     @IBAction func unwindFromOtherScreen(segue: UIStoryboardSegue){

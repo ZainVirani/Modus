@@ -116,8 +116,8 @@
                                     </stackView>
                                     <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="61" sectionHeaderHeight="1" sectionFooterHeight="1" translatesAutoresizingMaskIntoConstraints="NO" id="bsP-xe-9qo" userLabel="itemTable">
                                         <rect key="frame" x="0.0" y="88" width="600" height="348"/>
-                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
-                                        <color key="sectionIndexBackgroundColor" red="0.2335270217" green="0.0048014419610000001" blue="0.01439600603" alpha="1" colorSpace="calibratedRGB"/>
+                                        <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                        <color key="sectionIndexBackgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                         <prototypes>
                                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="itemCell" rowHeight="61" id="0e4-Bm-Qu5" customClass="itemCell" customModule="modus" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="1" width="600" height="61"/>
@@ -177,7 +177,7 @@
                                                         <constraint firstAttribute="bottom" secondItem="IEu-78-uqi" secondAttribute="bottom" id="z0A-mr-lle"/>
                                                     </constraints>
                                                 </tableViewCellContentView>
-                                                <color key="backgroundColor" red="0.79215686269999996" green="0.79215686269999996" blue="0.79607843140000001" alpha="1" colorSpace="calibratedRGB"/>
+                                                <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                                 <gestureRecognizers/>
                                                 <connections>
                                                     <outlet property="artwork" destination="1dy-rR-1Ri" id="py0-Yw-lFG"/>
@@ -370,8 +370,9 @@
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="O37-dc-As2" userLabel="First Responder" sceneMemberID="firstResponder"/>
-                <swipeGestureRecognizer direction="up" id="Ntk-au-hbB">
+                <swipeGestureRecognizer enabled="NO" direction="up" id="Ntk-au-hbB">
                     <connections>
+                        <action selector="segueToFullPlayer:" destination="aFT-Pi-bBg" id="FWZ-dO-58L"/>
                         <segue destination="8ta-ma-6fK" kind="show" id="HFJ-SO-fN8"/>
                     </connections>
                 </swipeGestureRecognizer>

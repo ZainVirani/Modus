@@ -62,10 +62,6 @@ class Player{
         return audio.nowPlayingItem
     }
     
-    func getNowPlayingTitle(){
-        
-    }
-    
     func setNowplayingItem(index: Int){
         audio.skipToBeginning()
         if index < 0 || index > mediaItems.count - 1 {

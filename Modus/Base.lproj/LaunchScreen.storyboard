@@ -17,21 +17,33 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="modus" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="p4m-lG-jFe">
-                                <rect key="frame" x="209" y="276" width="183" height="48"/>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="pjc-vb-ZNu">
+                                <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                                <subviews>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" text="modus" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="p4m-lG-jFe">
+                                        <rect key="frame" x="209" y="268" width="183" height="48"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="183" id="E56-zY-CJM"/>
+                                            <constraint firstAttribute="height" constant="48" id="x1L-E5-VM0"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="system" pointSize="61"/>
+                                        <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="183" id="E56-zY-CJM"/>
-                                    <constraint firstAttribute="height" constant="48" id="x1L-E5-VM0"/>
+                                    <constraint firstItem="p4m-lG-jFe" firstAttribute="centerX" secondItem="pjc-vb-ZNu" secondAttribute="centerX" id="YPK-Sc-Tdc"/>
+                                    <constraint firstItem="p4m-lG-jFe" firstAttribute="centerY" secondItem="pjc-vb-ZNu" secondAttribute="centerY" id="n3i-d4-gRJ"/>
                                 </constraints>
-                                <fontDescription key="fontDescription" type="system" pointSize="61"/>
-                                <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
-                                <nil key="highlightedColor"/>
-                            </label>
+                            </view>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
-                            <constraint firstItem="p4m-lG-jFe" firstAttribute="centerY" secondItem="6JZ-CB-ZtO" secondAttribute="centerY" id="EFD-Ke-Bku"/>
-                            <constraint firstItem="p4m-lG-jFe" firstAttribute="centerX" secondItem="6JZ-CB-ZtO" secondAttribute="centerX" id="ExH-9w-TQj"/>
+                            <constraint firstItem="Z5Q-5H-ncJ" firstAttribute="top" secondItem="pjc-vb-ZNu" secondAttribute="bottom" id="Zdu-a0-E9g"/>
+                            <constraint firstItem="pjc-vb-ZNu" firstAttribute="top" secondItem="DHR-HO-dBy" secondAttribute="bottom" constant="-20" id="fkr-w3-u6U"/>
+                            <constraint firstAttribute="trailing" secondItem="pjc-vb-ZNu" secondAttribute="trailing" id="n0f-R3-hGu"/>
+                            <constraint firstItem="pjc-vb-ZNu" firstAttribute="leading" secondItem="6JZ-CB-ZtO" secondAttribute="leading" id="vkw-fF-m2g"/>
                         </constraints>
                     </view>
                 </viewController>

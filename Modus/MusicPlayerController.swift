@@ -7,18 +7,23 @@
 //
 
 import UIKit
+import MediaPlayer
 
 class MusicPlayerController: UIViewController {
+    
+    var player: Player?
+    var nowPlaying: MPMediaItem?
 
     @IBOutlet weak var artworkLyricDisplay: UIImageView!
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        nowPlaying = player?.getNowPlayingItem()
+        print(nowPlaying?.title)
         // Do any additional setup after loading the view.
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
