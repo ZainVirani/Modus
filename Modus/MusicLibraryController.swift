@@ -292,6 +292,7 @@ class musicLibraryController: UIViewController{
             playerInfo.text = cell.itemInfo.text
         }
         player.setNowplayingItem(itemIndex)
+        player.skipToBeginning()
         playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
         timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
         player.play()

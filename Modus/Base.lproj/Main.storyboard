@@ -282,7 +282,7 @@
                                             </button>
                                             <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="1" continuous="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nXT-On-MrX" userLabel="playerProgress">
                                                 <rect key="frame" x="44" y="63" width="512" height="31"/>
-                                                <color key="maximumTrackTintColor" cocoaTouchSystemColor="darkTextColor"/>
+                                                <color key="maximumTrackTintColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                                 <connections>
                                                     <action selector="sliderChange:" destination="aFT-Pi-bBg" eventType="valueChanged" id="NYg-uC-pIg"/>
                                                 </connections>
