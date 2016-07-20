@@ -195,13 +195,6 @@
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="r8S-kt-E6q" userLabel="miniPlayer">
                                         <rect key="frame" x="0.0" y="436" width="600" height="100"/>
                                         <subviews>
-                                            <progressView opaque="NO" contentMode="scaleToFill" verticalHuggingPriority="750" progressViewStyle="bar" translatesAutoresizingMaskIntoConstraints="NO" id="DAJ-yt-AmQ">
-                                                <rect key="frame" x="48" y="83" width="504" height="3"/>
-                                                <constraints>
-                                                    <constraint firstAttribute="height" constant="2" id="h4q-nm-Zjz"/>
-                                                </constraints>
-                                                <color key="trackTintColor" red="0.15294117647058825" green="0.15294117647058825" blue="0.15294117647058825" alpha="1" colorSpace="calibratedRGB"/>
-                                            </progressView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="00:00" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Rij-VO-4X1" userLabel="currentTime">
                                                 <rect key="frame" x="8" y="78" width="32" height="14"/>
                                                 <fontDescription key="fontDescription" type="system" pointSize="11"/>
@@ -287,28 +280,35 @@
                                                     <action selector="playOrderChanged:" destination="aFT-Pi-bBg" eventType="touchUpInside" id="kqq-Ck-szq"/>
                                                 </connections>
                                             </button>
+                                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="1" continuous="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nXT-On-MrX" userLabel="playerProgress">
+                                                <rect key="frame" x="44" y="63" width="512" height="31"/>
+                                                <color key="maximumTrackTintColor" cocoaTouchSystemColor="darkTextColor"/>
+                                                <connections>
+                                                    <action selector="sliderChange:" destination="aFT-Pi-bBg" eventType="valueChanged" id="NYg-uC-pIg"/>
+                                                </connections>
+                                            </slider>
                                         </subviews>
                                         <color key="backgroundColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                         <color key="tintColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                         <gestureRecognizers/>
                                         <constraints>
                                             <constraint firstAttribute="trailing" secondItem="cVf-7g-FRe" secondAttribute="trailing" constant="8" id="3HG-E1-Bem"/>
+                                            <constraint firstAttribute="bottom" secondItem="nXT-On-MrX" secondAttribute="bottom" constant="7" id="5y6-sy-4Nr"/>
                                             <constraint firstAttribute="bottom" secondItem="Rij-VO-4X1" secondAttribute="bottom" constant="8" id="8Bq-uY-Vla"/>
                                             <constraint firstItem="EPj-8o-s9e" firstAttribute="leading" secondItem="yXy-hO-UWd" secondAttribute="trailing" constant="30" id="8QK-RZ-G6X"/>
                                             <constraint firstItem="yXy-hO-UWd" firstAttribute="leading" secondItem="4jR-Ik-AdI" secondAttribute="trailing" constant="10" id="HQA-2d-ZSS"/>
-                                            <constraint firstAttribute="trailing" secondItem="DAJ-yt-AmQ" secondAttribute="trailing" constant="48" id="IEJ-yE-uam"/>
                                             <constraint firstItem="JKk-k4-IAO" firstAttribute="leading" secondItem="r8S-kt-E6q" secondAttribute="leading" constant="8" id="J2T-lq-Hfy"/>
-                                            <constraint firstAttribute="bottom" secondItem="DAJ-yt-AmQ" secondAttribute="bottom" constant="15" id="KUP-Zb-D0L"/>
                                             <constraint firstItem="JKk-k4-IAO" firstAttribute="top" secondItem="r8S-kt-E6q" secondAttribute="top" constant="8" id="LYa-yP-PDL"/>
                                             <constraint firstItem="4jR-Ik-AdI" firstAttribute="centerY" secondItem="yXy-hO-UWd" secondAttribute="centerY" id="MmB-y4-pxe"/>
                                             <constraint firstItem="XEE-v6-9sR" firstAttribute="leading" secondItem="JKk-k4-IAO" secondAttribute="trailing" constant="4" id="NOH-HN-DwQ"/>
+                                            <constraint firstAttribute="trailing" secondItem="nXT-On-MrX" secondAttribute="trailing" constant="46" id="NoJ-ny-awe"/>
                                             <constraint firstAttribute="trailing" secondItem="XPH-Jp-0J3" secondAttribute="trailing" constant="8" id="OeG-xr-NeG"/>
                                             <constraint firstItem="4jR-Ik-AdI" firstAttribute="leading" secondItem="q98-8Q-bfL" secondAttribute="trailing" constant="3" id="SN1-Ta-91A"/>
                                             <constraint firstAttribute="bottom" secondItem="XPH-Jp-0J3" secondAttribute="bottom" constant="8" id="Sat-kB-0o8"/>
                                             <constraint firstItem="XEE-v6-9sR" firstAttribute="top" secondItem="r8S-kt-E6q" secondAttribute="top" constant="8" id="Up5-bL-xfQ"/>
+                                            <constraint firstItem="nXT-On-MrX" firstAttribute="leading" secondItem="r8S-kt-E6q" secondAttribute="leading" constant="46" id="b0h-Po-mZW"/>
                                             <constraint firstItem="XEE-v6-9sR" firstAttribute="width" secondItem="q98-8Q-bfL" secondAttribute="width" id="b5q-zJ-jSc"/>
                                             <constraint firstItem="EPj-8o-s9e" firstAttribute="centerY" secondItem="yXy-hO-UWd" secondAttribute="centerY" id="dQo-yT-3Rs"/>
-                                            <constraint firstItem="DAJ-yt-AmQ" firstAttribute="leading" secondItem="r8S-kt-E6q" secondAttribute="leading" constant="48" id="dTl-rI-Gsg"/>
                                             <constraint firstItem="cVf-7g-FRe" firstAttribute="leading" secondItem="EPj-8o-s9e" secondAttribute="trailing" constant="30" id="eJ1-ia-7fs"/>
                                             <constraint firstAttribute="height" constant="100" id="ew4-iL-dNr"/>
                                             <constraint firstItem="XPH-Jp-0J3" firstAttribute="top" secondItem="cVf-7g-FRe" secondAttribute="bottom" constant="12" id="lNl-6B-3Y1"/>
@@ -362,7 +362,7 @@
                         <outlet property="playerCurrTime" destination="Rij-VO-4X1" id="Du4-ha-RFi"/>
                         <outlet property="playerInfo" destination="q98-8Q-bfL" id="xDH-rS-TIS"/>
                         <outlet property="playerPlayButton" destination="EPj-8o-s9e" id="nq1-VV-9sr"/>
-                        <outlet property="playerProgress" destination="DAJ-yt-AmQ" id="61G-as-QXm"/>
+                        <outlet property="playerProgress" destination="nXT-On-MrX" id="WJA-1p-Sfp"/>
                         <outlet property="playerTitle" destination="XEE-v6-9sR" id="WDw-Oc-beG"/>
                         <outlet property="playerTotTime" destination="XPH-Jp-0J3" id="H0w-BA-iSY"/>
                         <outlet property="sortType" destination="6js-wZ-fTb" id="vgz-bM-JVU"/>
@@ -561,8 +561,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <tableView clipsSubviews="YES" contentMode="scaleToFill" misplaced="YES" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="61" sectionHeaderHeight="1" sectionFooterHeight="1" translatesAutoresizingMaskIntoConstraints="NO" id="izb-9J-Bmj">
-                                <rect key="frame" x="0.0" y="20" width="600" height="580"/>
+                            <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="61" sectionHeaderHeight="1" sectionFooterHeight="1" translatesAutoresizingMaskIntoConstraints="NO" id="izb-9J-Bmj">
+                                <rect key="frame" x="0.0" y="64" width="600" height="536"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" selectionStyle="default" indentationWidth="10" reuseIdentifier="itemCell" id="O9P-eK-RNK">

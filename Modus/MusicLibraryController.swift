@@ -63,8 +63,8 @@ class musicLibraryController: UIViewController{
     @IBOutlet weak private var playerPlayButton: UIButton!
     @IBOutlet weak private var playerCurrTime: UILabel!
     @IBOutlet weak private var playerTotTime: UILabel!
-    @IBOutlet weak private var playerProgress: UIProgressView!
-    @IBOutlet weak var playOrder: UIButton!
+    @IBOutlet weak private var playerProgress: UISlider!
+    @IBOutlet weak private var playOrder: UIButton!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -104,6 +104,7 @@ class musicLibraryController: UIViewController{
     
     func setupPlayer(){
         player.setQueue(musicQueue)
+        playerProgress.setThumbImage(UIImage(named: "circle.png"), forState: UIControlState.Normal)
         externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true) //60FPS bois
         itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
     }
@@ -194,6 +195,14 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    @IBAction func sliderChange(sender: AnyObject) {
+        let slider: UISlider = (sender as! UISlider)
+        let setRatio = Double(slider.value)
+        let setTime: NSTimeInterval = (player.getNowPlayingItem()?.playbackDuration)! * setRatio
+        player.skipTo(setTime)
+        print("player skipping to \(stringFromTimeInterval(setTime))")
+    }
+    
     func albumTap(sender: AnyObject){
         subSortType.setEnabled(false, forSegmentAtIndex: 0)
         subSortType.setTitle("", forSegmentAtIndex: 0)
@@ -273,14 +282,6 @@ class musicLibraryController: UIViewController{
             }
             sortChanged = false
         }
-        player.setNowplayingItem(itemIndex)
-        playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
-        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
-        player.play()
-        if let image = UIImage(named: "pause.png") {
-            playerPlayButton.setImage(image, forState: .Normal)
-        }
-        print("currently playing \(player.getNowPlayingItem()?.title)")
         let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
             cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
@@ -290,12 +291,19 @@ class musicLibraryController: UIViewController{
             playerTitle.text = cell.itemTitle.text
             playerInfo.text = cell.itemInfo.text
         }
+        player.setNowplayingItem(itemIndex)
+        playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+        player.play()
+        if let image = UIImage(named: "pause.png") {
+            playerPlayButton.setImage(image, forState: .Normal)
+        }
+        print("currently playing \(player.getNowPlayingItem()?.title)")
     }
     
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
-        subSortType.selectedSegmentIndex = 0
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
@@ -318,7 +326,6 @@ class musicLibraryController: UIViewController{
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
-        subSortType.selectedSegmentIndex = 0
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
@@ -600,7 +607,7 @@ class musicLibraryController: UIViewController{
     func audioProgress(){
         changeCurrTime()
         timeRatio = Float(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!)
-        playerProgress.setProgress(timeRatio, animated: true)
+        playerProgress.setValue(timeRatio, animated: true)
     }
     
     func changeCurrTime(){

@@ -76,6 +76,10 @@ class Player{
         }
     }
     
+    func skipTo(time: NSTimeInterval){
+        audio.currentPlaybackTime = time
+    }
+    
     func getRawState() -> Int{
         return audio.playbackState.rawValue
     }
