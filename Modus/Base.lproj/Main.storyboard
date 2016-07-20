@@ -211,6 +211,7 @@
                                                 <rect key="frame" x="548" y="22" width="44" height="44"/>
                                                 <constraints>
                                                     <constraint firstAttribute="height" constant="44" id="AtC-7t-Yzd"/>
+                                                    <constraint firstAttribute="width" secondItem="cVf-7g-FRe" secondAttribute="height" multiplier="1:1" id="fmX-hp-SwX"/>
                                                     <constraint firstAttribute="width" constant="44" id="lRu-sG-kG5"/>
                                                 </constraints>
                                                 <inset key="contentEdgeInsets" minX="10" minY="10" maxX="10" maxY="10"/>
@@ -224,6 +225,7 @@
                                                 <constraints>
                                                     <constraint firstAttribute="height" constant="44" id="2KQ-g2-Geo"/>
                                                     <constraint firstAttribute="width" constant="44" id="YwC-Vh-55g"/>
+                                                    <constraint firstAttribute="width" secondItem="EPj-8o-s9e" secondAttribute="height" multiplier="1:1" id="jAY-OA-5O0"/>
                                                 </constraints>
                                                 <state key="normal" image="play"/>
                                                 <connections>
@@ -242,8 +244,9 @@
                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="yXy-hO-UWd" userLabel="previous">
                                                 <rect key="frame" x="400" y="22" width="44" height="44"/>
                                                 <constraints>
-                                                    <constraint firstAttribute="width" constant="44" id="jUD-kD-vYk"/>
-                                                    <constraint firstAttribute="height" constant="44" id="nVo-ds-0tk"/>
+                                                    <constraint firstAttribute="width" constant="44" id="34o-aZ-P7K"/>
+                                                    <constraint firstAttribute="height" constant="44" id="ZMU-XM-89u"/>
+                                                    <constraint firstAttribute="width" secondItem="yXy-hO-UWd" secondAttribute="height" multiplier="1:1" id="ojM-t5-piU"/>
                                                 </constraints>
                                                 <inset key="contentEdgeInsets" minX="10" minY="10" maxX="10" maxY="10"/>
                                                 <state key="normal" image="backarrow"/>
@@ -272,8 +275,9 @@
                                             <button opaque="NO" contentMode="scaleAspectFit" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4jR-Ik-AdI" userLabel="order">
                                                 <rect key="frame" x="346" y="22" width="44" height="44"/>
                                                 <constraints>
-                                                    <constraint firstAttribute="width" constant="44" id="n0W-Q4-cL1"/>
-                                                    <constraint firstAttribute="height" constant="44" id="unJ-XM-8MZ"/>
+                                                    <constraint firstAttribute="height" constant="44" id="R7C-vK-xvA"/>
+                                                    <constraint firstAttribute="width" secondItem="4jR-Ik-AdI" secondAttribute="height" multiplier="1:1" id="aGE-o2-tR9"/>
+                                                    <constraint firstAttribute="width" constant="44" id="yki-PJ-1Mu"/>
                                                 </constraints>
                                                 <state key="normal" image="arrows"/>
                                                 <connections>
