@@ -14,7 +14,7 @@ import MediaPlayer
 class musicLibraryController: UIViewController{
     
     private var timer: NSTimer?
-    private var timeRatio: Float = 0.00
+    private var timeRatio: Float32 = 0.00
     private var externalInputCheckTimer: NSTimer?
     private var player = Player()
     private var musicQueue: [MPMediaItem] = []
@@ -607,7 +607,7 @@ class musicLibraryController: UIViewController{
     
     func audioProgress(){
         changeCurrTime()
-        timeRatio = Float(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!)
+        timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!) //Error here on Iphone 5
         playerProgress.setValue(timeRatio, animated: true)
     }
     
@@ -661,10 +661,6 @@ class musicLibraryController: UIViewController{
                 playOrder.setImage(image, forState: .Normal)
             }
         }
-    }
-    
-    func getNowPlayingItem() -> MPMediaItem?{
-        return player.getNowPlayingItem()
     }
     
     @IBAction func unwindFromOtherScreen(segue: UIStoryboardSegue){
