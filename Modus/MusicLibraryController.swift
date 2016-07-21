@@ -132,7 +132,7 @@ class musicLibraryController: UIViewController{
         removeDuplicateArtists(&artistQueue)
         print("artist count: \(artistQueue.count)")
         sortChanged = false
-        reSort(&musicQueue)
+        musicQueue = reSort(musicQueue)
         if isLibraryEmpty(){
             return
         }
@@ -308,13 +308,13 @@ class musicLibraryController: UIViewController{
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
-            reSort(&musicQueue)
+            musicQueue = reSort(musicQueue)
         }
         else if sort == 3{
-            reSort(&albumQueue)
+            musicQueue = reSort(albumQueue)
         }
         else if sort == 2{
-            reSort(&artistQueue)
+            musicQueue = reSort(artistQueue)
         }
         else if sort == 1{
             
@@ -330,13 +330,13 @@ class musicLibraryController: UIViewController{
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
-            reSort(&musicQueue)
+            musicQueue = reSort(musicQueue)
         }
         else if sort == 3{
-            reSort(&albumQueue)
+            musicQueue = reSort(albumQueue)
         }
         else if sort == 2{
-            reSort(&artistQueue)
+            musicQueue = reSort(artistQueue)
         }
         else if sort == 1{
             
@@ -346,7 +346,7 @@ class musicLibraryController: UIViewController{
         }
     }
 
-    func reSort(inout query: [MPMediaItem]){
+    func reSort(var query: [MPMediaItem]) -> [MPMediaItem]{
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{ //song
@@ -366,9 +366,9 @@ class musicLibraryController: UIViewController{
                 print("sort: song playcount")
             }
             reloadTableInMainThread()
-            return
+            return query
         }
-        if sort == 3{ //album
+        else if sort == 3{ //album
             itemToDisplay = itemType.album
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
             subSortType.setTitle("Artist/Date", forSegmentAtIndex: 1)
@@ -405,9 +405,9 @@ class musicLibraryController: UIViewController{
                 print("sort: album artist")
             }
             reloadTableInMainThread()
-            return
+            return query
         }
-        if sort == 2{
+        else if sort == 2{
             itemToDisplay = itemType.artist
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
             subSortType.setTitle("Reverse Alpha", forSegmentAtIndex: 1)
@@ -424,9 +424,9 @@ class musicLibraryController: UIViewController{
                 print("sort: artist reverse")
             }
             reloadTableInMainThread()
-            return
+            return query
         }
-        if sort == 1{ //recent NOT DONE
+        else if sort == 1{ //recent NOT DONE
             itemToDisplay = itemType.song
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
             subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
@@ -439,9 +439,9 @@ class musicLibraryController: UIViewController{
                 print("sort: recent playcount")
             }
             reloadTableInMainThread()
-            return
+            return query
         }
-        if sort == 0{ //playlist NOT DONE
+        else if sort == 0{ //playlist NOT DONE
             itemToDisplay = itemType.song
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
             subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
@@ -454,10 +454,11 @@ class musicLibraryController: UIViewController{
                 print("sort: recent playcount")
             }
             reloadTableInMainThread()
-            return
+            return query
 
         }
         print("re-sort unknown")
+        return query
     }
     
     @IBAction func syncLibButton(sender: AnyObject) {
