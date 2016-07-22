@@ -19,6 +19,15 @@ class Player{
         audio.pause()
         audio.nowPlayingItem = nil
         print("Player initialized")
+        NSNotificationCenter.defaultCenter().addObserver(
+            self,
+            selector: #selector(nowPlayingItemChanged),
+            name: MPMusicPlayerControllerNowPlayingItemDidChangeNotification,
+            object: nil)
+    }
+    
+    @objc func nowPlayingItemChanged(notif: NSNotification){
+        print("ITEM CHANGED")
     }
     
     func setQueue(queue: [MPMediaItem]){
@@ -50,6 +59,10 @@ class Player{
         setNowplayingItem(itemIndex)
     }
     
+    func getPreviouslyPlayedItem(){
+        
+    }
+    
     func getQueueCount() -> Int{
         return mediaItems.count
     }
@@ -63,7 +76,6 @@ class Player{
     }
     
     func setNowplayingItem(index: Int){
-        audio.skipToBeginning()
         if index < 0 || index > mediaItems.count - 1 {
             audio.nowPlayingItem = nil
             audio.pause()
@@ -72,8 +84,8 @@ class Player{
         else{
             audio.nowPlayingItem = itemCollection.items[index]
             itemIndex = index
-            audio.play()
         }
+        print("set as \(itemCollection.items[index].title)")
     }
     
     func skipTo(time: NSTimeInterval){
@@ -86,5 +98,9 @@ class Player{
     
     func getCurrentPlaybackTime() -> NSTimeInterval{
         return audio.currentPlaybackTime
+    }
+    
+    deinit {
+          NSNotificationCenter.defaultCenter().removeObserver(MPMusicPlayerControllerNowPlayingItemDidChangeNotification)
     }
 }

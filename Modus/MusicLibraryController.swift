@@ -22,7 +22,8 @@ class musicLibraryController: UIViewController{
     private var artistQueue: [MPMediaItem] = []
     private var subAlbumQueue: [MPMediaItem] = []
     private var subMusicQueue: [MPMediaItem] = []
-    private var shuffleQueue: [MPMediaItem] = []
+    private var shuffleQueue: [Int] = []
+    private var shuffleIndex = 1
     
     private var newSongCount = 0 //don't save to Realm
     private var oldSongCount = 0 //save to Realm on each sync
@@ -131,9 +132,11 @@ class musicLibraryController: UIViewController{
         print("album count: \(albumQueue.count)")
         artistQueue = MPMediaQuery.artistsQuery().items!
         removeDuplicateArtists(&artistQueue)
-        print("artist count: \(artistQueue.count)")
+        print("initial artist count: \(artistQueue.count)")
+        removeEmptyArtists(&artistQueue, albums: albumQueue)
+        print("non empty artist count: \(artistQueue.count)")
         sortChanged = false
-        musicQueue = reSort(musicQueue)
+        reSort(&musicQueue)
         if isLibraryEmpty(){
             return
         }
@@ -153,7 +156,7 @@ class musicLibraryController: UIViewController{
         var j = 1
         var h = 0
         for _ in 0...values.count-2{
-            if values[h].albumPersistentID == values[h+1].albumPersistentID{
+            if values[h].albumPersistentID == values[h+1].albumPersistentID || values[h].albumTitle == values[h+1].albumTitle{
                 values.removeAtIndex(h)
                 j += 1
             }
@@ -164,15 +167,32 @@ class musicLibraryController: UIViewController{
     }
     
     func removeDuplicateArtists(inout values: [MPMediaItem]){
-        var j = 1
         var h = 0
         for _ in 0...values.count-2{
             if values[h].artistPersistentID == values[h+1].artistPersistentID{
                 values.removeAtIndex(h)
-                j += 1
             }
             else{
                 h += 1
+            }
+        }
+    }
+    
+    func removeEmptyArtists(inout artists: [MPMediaItem], albums: [MPMediaItem]){
+        var removed = 0
+        var i = 0
+        for _ in 0...artists.count-1{
+            var albumCount = 0
+            for j in 0...albums.count-1{
+                if albums[j].artist == artists[i].artist {
+                    albumCount = 1
+                    i += 1
+                    break
+                }
+            }
+            if albumCount == 0{
+                artists.removeAtIndex(i)
+                removed += 1
             }
         }
     }
@@ -275,6 +295,7 @@ class musicLibraryController: UIViewController{
         if sortChanged{
             if itemToDisplay == itemType.song{
                 player.setQueue(musicQueue) //set player queue to resorted queue
+                
             }
             else if itemToDisplay == itemType.subSong{
                 player.setQueue(subMusicQueue) //set player queue to resorted queue
@@ -291,7 +312,6 @@ class musicLibraryController: UIViewController{
             playerInfo.text = cell.itemInfo.text
         }
         player.setNowplayingItem(itemIndex)
-        player.skipToBeginning()
         playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
         timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
         player.play()
@@ -299,21 +319,27 @@ class musicLibraryController: UIViewController{
             playerPlayButton.setImage(image, forState: .Normal)
         }
         print("currently playing \(player.getNowPlayingItem()?.title)")
+        shuffleQueue.removeAll()
+        shuffleIndex = 1
+        if orderToPlay == order.shuffle{
+            shuffleQueue.append(currentCellIndex)
+        }
     }
     
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
+        subSortType.selectedSegmentIndex = 0
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
-            musicQueue = reSort(musicQueue)
+            reSort(&musicQueue)
         }
         else if sort == 3{
-            albumQueue = reSort(albumQueue)
+            reSort(&albumQueue)
         }
         else if sort == 2{
-            artistQueue = reSort(artistQueue)
+            reSort(&artistQueue)
         }
         else if sort == 1{
             
@@ -329,13 +355,13 @@ class musicLibraryController: UIViewController{
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
-            musicQueue = reSort(musicQueue)
+            reSort(&musicQueue)
         }
         else if sort == 3{
-            albumQueue = reSort(albumQueue)
+            reSort(&albumQueue)
         }
         else if sort == 2{
-            artistQueue = reSort(artistQueue)
+            reSort(&artistQueue)
         }
         else if sort == 1{
             
@@ -345,7 +371,7 @@ class musicLibraryController: UIViewController{
         }
     }
 
-    func reSort(var query: [MPMediaItem]) -> [MPMediaItem]{
+    func reSort(inout query: [MPMediaItem]){
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{ //song
@@ -365,7 +391,7 @@ class musicLibraryController: UIViewController{
                 print("sort: song playcount")
             }
             reloadTableInMainThread()
-            return query
+            return
         }
         else if sort == 3{ //album
             itemToDisplay = itemType.album
@@ -404,7 +430,7 @@ class musicLibraryController: UIViewController{
                 print("sort: album artist")
             }
             reloadTableInMainThread()
-            return query
+            return
         }
         else if sort == 2{
             itemToDisplay = itemType.artist
@@ -423,7 +449,7 @@ class musicLibraryController: UIViewController{
                 print("sort: artist reverse")
             }
             reloadTableInMainThread()
-            return query
+            return
         }
         else if sort == 1{ //recent NOT IMPLEMENTED
             itemToDisplay = itemType.song
@@ -438,7 +464,7 @@ class musicLibraryController: UIViewController{
                 print("sort: recent playcount")
             }
             reloadTableInMainThread()
-            return query
+            return
         }
         else if sort == 0{ //playlist NOT IMPLEMENTED
             itemToDisplay = itemType.song
@@ -453,12 +479,12 @@ class musicLibraryController: UIViewController{
                 print("sort: recent playcount")
             }
             reloadTableInMainThread()
-            return query
+            return
 
         }
         print("re-sort unknown")
         reloadTableInMainThread()
-        return query
+        return
     }
     
     @IBAction func syncLibButton(sender: AnyObject) {
@@ -524,11 +550,21 @@ class musicLibraryController: UIViewController{
             unBoldPrevItem(currentCellIndex)
             updateMiniPlayer()
         }
-        else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
-            currentCellIndex += 1
-            player.playNext()
-            unBoldPrevItem(currentCellIndex)
-            updateMiniPlayer()
+        else if firstPlay == true && orderToPlay == order.shuffle{
+            if shuffleIndex == 1{
+                currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
+                player.setNowplayingItem(currentCellIndex)
+                shuffleQueue.append(currentCellIndex)
+                unBoldPrevItem(currentCellIndex)
+                updateMiniPlayer()
+            }
+            else if shuffleIndex > 1{
+                shuffleIndex -= 1
+                currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex]
+                player.setNowplayingItem(currentCellIndex)
+                unBoldPrevItem(currentCellIndex)
+                updateMiniPlayer()
+            }
         }
         
     }
@@ -546,12 +582,13 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
-        else if firstPlay == true && orderToPlay == order.shuffle{ //NOT IMPLEMENTED
-            if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
-                currentCellIndex += -1
-                player.playPrev()
+        else if firstPlay == true && orderToPlay == order.shuffle{
+            if player.getCurrentPlaybackTime() <= NSTimeInterval(4) && shuffleQueue.count >= (shuffleIndex+1){
+                currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex - 1]
+                player.setNowplayingItem(currentCellIndex)
                 unBoldPrevItem(currentCellIndex)
                 updateMiniPlayer()
+                shuffleIndex += 1
             }
             else{
                 player.skipToBeginning()
@@ -629,10 +666,20 @@ class musicLibraryController: UIViewController{
                     player.pause()
                 }
             case .shuffle: //NOT IMPLEMENTED
-                currentCellIndex += 1
-                player.playNext()
-                unBoldPrevItem(currentCellIndex)
-                updateMiniPlayer()
+                if shuffleIndex == 1{
+                    currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
+                    player.setNowplayingItem(currentCellIndex)
+                    shuffleQueue.append(currentCellIndex)
+                    unBoldPrevItem(currentCellIndex)
+                    updateMiniPlayer()
+                }
+                else if shuffleIndex > 1{
+                    shuffleIndex -= 1
+                    currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex]
+                    player.setNowplayingItem(currentCellIndex)
+                    unBoldPrevItem(currentCellIndex)
+                    updateMiniPlayer()
+                }
             case .repeatItem:
                 player.skipToBeginning()
             }
@@ -648,6 +695,7 @@ class musicLibraryController: UIViewController{
             if let image = UIImage(named: "arrows-1.png") {
                 playOrder.setImage(image, forState: .Normal)
             }
+            shuffleQueue.append(currentCellIndex)
         case .shuffle:
             print("order changed to repeat")
             orderToPlay = order.repeatItem
@@ -752,7 +800,7 @@ extension musicLibraryController: UITableViewDataSource {
                 print("Resync Necessary: T")
             }
             
-            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyAlbumArtist) as? String {
                 if let yearNumber: Int = (item.valueForKey("year") as? Int)!{
                     if yearNumber != 0{
                     cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
@@ -783,7 +831,7 @@ extension musicLibraryController: UITableViewDataSource {
             cell.itemDuration.font = UIFont.systemFontOfSize(15)
             let item = artistQueue[row]
             cell.itemDuration.text = ""
-            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyAlbumArtist) as? String {
                 cell.itemTitle.text = titleOfItem
             }
             else{
@@ -815,7 +863,7 @@ extension musicLibraryController: UITableViewDataSource {
             
             cell.artwork.image = latestAlbumArtwork
         }
-        else if itemToDisplay == itemType.subAlbum{
+        else if itemToDisplay == itemType.subAlbum{ //sub album
             cell.itemTitle.font = UIFont.systemFontOfSize(17)
             cell.itemInfo.font = UIFont.systemFontOfSize(17)
             cell.itemDuration.font = UIFont.systemFontOfSize(15)
@@ -828,7 +876,7 @@ extension musicLibraryController: UITableViewDataSource {
                 print("Resync Necessary: T")
             }
             
-            if let artistInfo = item.valueForProperty(MPMediaItemPropertyArtist) as? String {
+            if let artistInfo = item.valueForProperty(MPMediaItemPropertyAlbumArtist) as? String {
                 if let yearNumber: Int = (item.valueForKey("year") as? Int)!{
                     if yearNumber != 0{
                         cell.itemInfo.text = "\(artistInfo) - \(yearNumber)"
@@ -853,7 +901,7 @@ extension musicLibraryController: UITableViewDataSource {
                 cell.artwork.image = UIImage(named: "defaultArtwork.png")!
             }
         }
-        else if itemToDisplay == itemType.subSong{ //song
+        else if itemToDisplay == itemType.subSong{ //sub song
             let item = subMusicQueue[row]
             if let titleOfItem = item.valueForProperty(MPMediaItemPropertyTitle) as? String {
                 cell.itemTitle.text = titleOfItem
