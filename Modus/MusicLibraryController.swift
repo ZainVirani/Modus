@@ -51,6 +51,11 @@ class musicLibraryController: UIViewController{
         case subAlbum
         case subSong
     }
+    private enum oldSub{
+        case subAlbum
+        case album
+    }
+    private var oldSubItem = oldSub.album
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
     
@@ -225,10 +230,12 @@ class musicLibraryController: UIViewController{
     }
     
     func albumTap(path: NSIndexPath){
-        subSortType.setEnabled(false, forSegmentAtIndex: 0)
-        subSortType.setTitle("", forSegmentAtIndex: 0)
+        subMusicQueue.removeAll()
+        subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.setTitle("Back", forSegmentAtIndex: 0)
         subSortType.setEnabled(false, forSegmentAtIndex: 1)
         subSortType.setTitle("", forSegmentAtIndex: 1)
+        subSortType.selectedSegmentIndex = -1
         sortType.selectedSegmentIndex = -1
         print("album chosen")
         if let cell = itemTable.cellForRowAtIndexPath(path) as! itemCell? {
@@ -255,10 +262,13 @@ class musicLibraryController: UIViewController{
     }
     
     func artistTap(path: NSIndexPath){
-        subSortType.setEnabled(false, forSegmentAtIndex: 0)
-        subSortType.setTitle("", forSegmentAtIndex: 0)
+        oldSubItem = oldSub.subAlbum
+        subAlbumQueue.removeAll()
+        subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.setTitle("Back", forSegmentAtIndex: 0)
         subSortType.setEnabled(false, forSegmentAtIndex: 1)
         subSortType.setTitle("", forSegmentAtIndex: 1)
+        subSortType.selectedSegmentIndex = -1
         sortType.selectedSegmentIndex = -1
         print("arist chosen")
         if let cell = itemTable.cellForRowAtIndexPath(path) as! itemCell? {
@@ -336,13 +346,14 @@ class musicLibraryController: UIViewController{
             reSort(&musicQueue)
         }
         else if sort == 3{
+            oldSubItem = oldSub.album
             reSort(&albumQueue)
         }
         else if sort == 2{
             reSort(&artistQueue)
         }
         else if sort == 1{
-            
+            reSort(&subMusicQueue)
         }
         else if sort == 0{
             
@@ -364,14 +375,76 @@ class musicLibraryController: UIViewController{
             reSort(&artistQueue)
         }
         else if sort == 1{
-            
+            reSort(&subMusicQueue)
         }
         else if sort == 0{
             
         }
+        else if sort == -1{
+            print("back pressed")
+            previousTable()
+        }
+    }
+    
+    func previousTable(){
+        if itemToDisplay == itemType.subSong{
+            switch oldSubItem{
+            case .album:
+                print("back to alb")
+                sortType.selectedSegmentIndex = 3
+                subSortType.selectedSegmentIndex = 0
+                reSort(&albumQueue)
+            case .subAlbum:
+                print("back to subAlb")
+                subSortType.selectedSegmentIndex = -1
+                itemToDisplay = itemType.subAlbum
+                reloadTableInMainThread()
+            }
+            
+        }
+        else if itemToDisplay == itemType.subAlbum{
+            print("back to art")
+            sortType.selectedSegmentIndex = 2
+            subSortType.selectedSegmentIndex = 0
+            reSort(&artistQueue)
+        }
+    }
+    
+    func getRecentSongs(){
+        var error = false
+        musicQueue.sortInPlace{
+            if let playDate1 = $0.lastPlayedDate , let playDate2 = $1.lastPlayedDate{
+                return playDate1.compare(playDate2) == NSComparisonResult.OrderedDescending
+            }
+            else if let _ = $0.lastPlayedDate{
+                return true
+            }
+            else if  let _ = $1.lastPlayedDate{
+                return false
+            }
+            else{
+                error = true
+                return NSDate.distantPast().compare(NSDate.distantPast()) == NSComparisonResult.OrderedDescending
+            }
+        }
+        if error{
+            print("recently played date error in getRecentSongs")
+        }
+        subMusicQueue.removeAll()
+        if musicQueue.count > 50{
+            for i in 0...49{
+                subMusicQueue.append(musicQueue[i])
+            }
+        }
+        else{
+            for i in 0...musicQueue.count{
+                subMusicQueue.append(musicQueue[i])
+            }
+        }
     }
 
     func reSort(inout query: [MPMediaItem]){
+        var error = false
         let sort = sortType.selectedSegmentIndex
         let subSort = subSortType.selectedSegmentIndex
         if sort == 4{ //song
@@ -382,7 +455,7 @@ class musicLibraryController: UIViewController{
                 query.sortInPlace{
                     return $0.title < $1.title
                 }
-                print("sort: song alpha \(query.count)")
+                print("sort: song alpha")
             }
             else if subSort == 1{
                 query.sortInPlace{
@@ -413,19 +486,21 @@ class musicLibraryController: UIViewController{
                             return yearNumber1 < yearNumber2
                         }
                         else{
-                            print("release date error in sorting")
-                            let alertController = UIAlertController(title: "modus", message:
-                                "Some release date information could not be retrieved.", preferredStyle: UIAlertControllerStyle.Alert)
-                            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
-                            
-                            self.presentViewController(alertController, animated: true, completion: nil)
-
+                            error = true
                             return $0.albumTitle < $1.albumTitle
                         }
                     }
                     else{
                         return $0.artist < $1.artist
                     }
+                }
+                if error{
+                    print("release date error in sorting")
+                    let alertController = UIAlertController(title: "modus", message:
+                        "Some release date information could not be retrieved.", preferredStyle: UIAlertControllerStyle.Alert)
+                    alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                    
+                    self.presentViewController(alertController, animated: true, completion: nil)
                 }
                 print("sort: album artist")
             }
@@ -435,7 +510,7 @@ class musicLibraryController: UIViewController{
         else if sort == 2{
             itemToDisplay = itemType.artist
             subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
-            subSortType.setTitle("Reverse Alpha", forSegmentAtIndex: 1)
+            subSortType.setTitle("Reversed", forSegmentAtIndex: 1)
             if subSort == 0{
                 query.sortInPlace{
                     return $0.artist < $1.artist
@@ -451,17 +526,18 @@ class musicLibraryController: UIViewController{
             reloadTableInMainThread()
             return
         }
-        else if sort == 1{ //recent NOT IMPLEMENTED
-            itemToDisplay = itemType.song
+        else if sort == 1{ //recent
+            itemToDisplay = itemType.subSong
             subSortType.setTitle("Recent", forSegmentAtIndex: 0)
-            subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
+            subSortType.setTitle("Reversed", forSegmentAtIndex: 1)
             if subSort == 0{
-                
-                print("sort: recent")
+                getRecentSongs()
+                print("sort: recent songs")
             }
             else if subSort == 1{
-                
-                print("sort: recent playcount")
+                getRecentSongs()
+                subMusicQueue = subMusicQueue.reverse()
+                print("sort: recent albums")
             }
             reloadTableInMainThread()
             return
@@ -612,7 +688,7 @@ class musicLibraryController: UIViewController{
             }
         }
         else{
-            print("Resync Necessary: A - A")
+            print("Resync Necessary: A - A (mini)")
         }
         
         if let itemArtwork = nowPlaying.valueForProperty(MPMediaItemPropertyArtwork){
@@ -645,7 +721,7 @@ class musicLibraryController: UIViewController{
     
     func audioProgress(){
         changeCurrTime()
-        timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!) //Error here on Iphone 5
+        timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!) //Error here on Iphones
         playerProgress.setValue(timeRatio, animated: true)
     }
     
@@ -665,7 +741,7 @@ class musicLibraryController: UIViewController{
                 else{
                     player.pause()
                 }
-            case .shuffle: //NOT IMPLEMENTED
+            case .shuffle:
                 if shuffleIndex == 1{
                     currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
                     player.setNowplayingItem(currentCellIndex)
