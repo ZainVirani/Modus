@@ -22,6 +22,8 @@ class musicLibraryController: UIViewController{
     private var artistQueue: [MPMediaItem] = []
     private var subAlbumQueue: [MPMediaItem] = []
     private var subMusicQueue: [MPMediaItem] = []
+    //private var recentAlbums: [MPMediaItem] = []
+    //private var recentSongs: [MPMediaItem] = []
     private var shuffleQueue: [Int] = []
     private var shuffleIndex = 1
     
@@ -38,6 +40,7 @@ class musicLibraryController: UIViewController{
     
     private let realm = try! Realm()
     private var appData: Results<AppData>?
+    //private var realmRecentAlbums: Results<RecentAlbums>?
     private var sortChanged = false
     private enum order{
         case normal
@@ -54,8 +57,10 @@ class musicLibraryController: UIViewController{
     private enum oldSub{
         case subAlbum
         case album
+        case recentAlb
     }
     private var oldSubItem = oldSub.album
+    private var oldSubRow = 0
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
     
@@ -86,6 +91,7 @@ class musicLibraryController: UIViewController{
     
     func retreiveData(){
         appData = realm.objects(AppData) //retrieve app data
+        //realmRecentAlbums = realm.objects(RecentAlbums)
         if let data = appData{
             if data.isEmpty{
                 let newAppData = AppData() //create new
@@ -107,6 +113,17 @@ class musicLibraryController: UIViewController{
                 print("app data retrieved... OSC = \(oldSongCount)")
             }
         }
+        /*if let recAlb = realmRecentAlbums{
+            if recAlb.isEmpty{
+                print("no rec alb data found")
+            }
+            else{
+                recentAlbums = recAlb[0].albumArray
+                recentSongs = recAlb[0].songsArray
+                print("rec alb retrieved... RAC = \(recentAlbums.count)")
+                print("rec son retrieved... RSC = \(recentSongs.count)")
+            }
+        }*/
     }
     
     func setupPlayer(){
@@ -133,12 +150,16 @@ class musicLibraryController: UIViewController{
         subSortType.selectedSegmentIndex = 0
         musicQueue = MPMediaQuery.songsQuery().items!
         albumQueue = MPMediaQuery.albumsQuery().items!
-        removeDuplicateAlbums(&albumQueue)
-        print("album count: \(albumQueue.count)")
+        if albumQueue.count > 1{
+            removeDuplicateAlbums(&albumQueue)
+        }
         artistQueue = MPMediaQuery.artistsQuery().items!
-        removeDuplicateArtists(&artistQueue)
+        if artistQueue.count > 1{
+            removeDuplicateArtists(&artistQueue)
+            removeEmptyArtists(&artistQueue, albums: albumQueue)
+        }
+        print("album count: \(albumQueue.count)")
         print("initial artist count: \(artistQueue.count)")
-        removeEmptyArtists(&artistQueue, albums: albumQueue)
         print("non empty artist count: \(artistQueue.count)")
         sortChanged = false
         reSort(&musicQueue)
@@ -162,6 +183,7 @@ class musicLibraryController: UIViewController{
         var h = 0
         for _ in 0...values.count-2{
             if values[h].albumPersistentID == values[h+1].albumPersistentID || values[h].albumTitle == values[h+1].albumTitle{
+                //print("rem \(values[h].albumPersistentID) \(values[h].albumTitle) \(values[h+1].albumPersistentID) \(values[h+1].albumTitle)")
                 values.removeAtIndex(h)
                 j += 1
             }
@@ -219,6 +241,67 @@ class musicLibraryController: UIViewController{
             oldPlayerItem = player.getNowPlayingItem()?.persistentID
             firstPlay = true
         }
+        /*if sortType.selectedSegmentIndex != 1 && sortType.selectedSegmentIndex != 4{
+            if oldSubItem == oldSub.album{
+                if recentAlbums.count > 1{
+                    for i in 0...recentAlbums.count-1{
+                        if i == recentAlbums.count{
+                            break
+                        }
+                        if recentAlbums[i].albumPersistentID == albumQueue[oldSubRow].albumPersistentID{
+                            recentAlbums.removeAtIndex(i)
+                            print("dup rem")
+                        }
+                    }
+                }
+                recentAlbums.append(albumQueue[oldSubRow])
+                print("album added to recent \(albumQueue[oldSubRow].albumTitle)")
+            }
+            else if oldSubItem == oldSub.subAlbum{
+                if recentAlbums.count > 1{
+                    for i in 0...recentAlbums.count-1{
+                        if i == recentAlbums.count{
+                            break
+                        }
+                        if recentAlbums[i].albumPersistentID == subAlbumQueue[oldSubRow].albumPersistentID{
+                            recentAlbums.removeAtIndex(i)
+                            print("dup rem")
+                        }
+                    }
+                }
+                recentAlbums.append(subAlbumQueue[oldSubRow])
+                print("album added to recent \(subAlbumQueue[oldSubRow].albumTitle)")
+            }
+            if recentAlbums.count == 51{
+                recentAlbums.removeFirst()
+            }
+            /*let realm = try! Realm()
+            try! realm.write() {
+                realmRecentAlbums![0].albumArray = recentAlbums
+            }*/
+        }*/
+        
+        /*if recentSongs.count > 1{
+            for i in 0...recentSongs.count-1{
+                if i >= recentSongs.count{
+                    break
+                }
+                if recentSongs[i].persistentID == player.getNowPlayingItem()?.persistentID{
+                    recentAlbums.removeAtIndex(i)
+                    print("dup rem")
+                }
+            }
+        }
+        recentSongs.append(player.getNowPlayingItem()!)
+        print("song added to recent \(player.getNowPlayingItem()!.title)")
+        if recentSongs.count == 51{
+            recentSongs.removeFirst()
+        }*/
+        
+        /*let realm = try! Realm()
+        try! realm.write() {
+            realmRecentAlbums![0].songsArray = recentSongs
+        }*/
     }
     
     @IBAction func sliderChange(sender: AnyObject) {
@@ -257,6 +340,7 @@ class musicLibraryController: UIViewController{
             }
             return $0.albumTrackNumber < $1.albumTrackNumber
         }
+        oldSubRow = path.row
         itemToDisplay = itemType.subSong
         reloadTableInMainThread()
     }
@@ -399,8 +483,12 @@ class musicLibraryController: UIViewController{
                 subSortType.selectedSegmentIndex = -1
                 itemToDisplay = itemType.subAlbum
                 reloadTableInMainThread()
+            case .recentAlb:
+                print("back to recAlb")
+                sortType.selectedSegmentIndex = 1
+                subSortType.selectedSegmentIndex = 1
+                reSort(&subAlbumQueue)
             }
-            
         }
         else if itemToDisplay == itemType.subAlbum{
             print("back to art")
@@ -441,6 +529,34 @@ class musicLibraryController: UIViewController{
                 subMusicQueue.append(musicQueue[i])
             }
         }
+    }
+    
+    func getRecentAlbums(){
+        getRecentSongs()
+        subAlbumQueue.removeAll()
+        var tempQ: [MPMediaItem] = []
+        for song in subMusicQueue{
+            tempQ = albumQueue.filter { (item) -> Bool in
+                return item.albumPersistentID == song.albumPersistentID || item.albumTitle == song.albumTitle
+            }
+            if tempQ.count > 0{
+                subAlbumQueue.append(tempQ[0])
+            }
+            else{
+                print("GRA retrieval error")
+            }
+        }
+        var seen: [MPMediaItem] = []
+        var index = 0
+        for element in subAlbumQueue {
+            if seen.contains(element) {
+                subAlbumQueue.removeAtIndex(index)
+            } else {
+                seen.append(element)
+                index += 1
+            }
+        }
+
     }
 
     func reSort(inout query: [MPMediaItem]){
@@ -527,16 +643,21 @@ class musicLibraryController: UIViewController{
             return
         }
         else if sort == 1{ //recent
-            itemToDisplay = itemType.subSong
-            subSortType.setTitle("Recent", forSegmentAtIndex: 0)
-            subSortType.setTitle("Reversed", forSegmentAtIndex: 1)
+            subSortType.setTitle("Songs", forSegmentAtIndex: 0)
+            subSortType.setTitle("Albums", forSegmentAtIndex: 1)
             if subSort == 0{
+                itemToDisplay = itemType.subSong
                 getRecentSongs()
+                //subMusicQueue = recentSongs.reverse()
                 print("sort: recent songs")
             }
             else if subSort == 1{
-                getRecentSongs()
-                subMusicQueue = subMusicQueue.reverse()
+                oldSubItem = oldSub.recentAlb
+                itemToDisplay = itemType.subAlbum
+                getRecentAlbums()
+                //subAlbumQueue = recentAlbums.reverse()
+                //getRecentSongs()
+                //subMusicQueue = subMusicQueue.reverse()
                 print("sort: recent albums")
             }
             reloadTableInMainThread()
@@ -642,7 +763,22 @@ class musicLibraryController: UIViewController{
                 updateMiniPlayer()
             }
         }
-        
+        /*if recentSongs.count > 1{
+            for i in 0...recentSongs.count-1{
+                if i == recentSongs.count{
+                    break
+                }
+                if recentSongs[i].persistentID == player.getNowPlayingItem()?.persistentID{
+                    recentAlbums.removeAtIndex(i)
+                    print("dup rem")
+                }
+            }
+        }
+        recentSongs.append(player.getNowPlayingItem()!)
+        print("song added to recent \(player.getNowPlayingItem()!.title)")
+        if recentSongs.count == 51{
+            recentSongs.removeFirst()
+        }*/
     }
     
     @IBAction func playerPrevButton(sender: AnyObject) {
@@ -670,6 +806,22 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
+        /*if recentSongs.count > 1{
+            for i in 0...recentSongs.count-1{
+                if i == recentSongs.count{
+                    break
+                }
+                if recentSongs[i].persistentID == player.getNowPlayingItem()?.persistentID{
+                    recentAlbums.removeAtIndex(i)
+                    print("dup rem")
+                }
+            }
+        }
+        recentSongs.append(player.getNowPlayingItem()!)
+        print("song added to recent \(player.getNowPlayingItem()!.title)")
+        if recentSongs.count == 51{
+            recentSongs.removeFirst()
+        }*/
     }
     
     func updateMiniPlayer(){
@@ -721,7 +873,8 @@ class musicLibraryController: UIViewController{
     
     func audioProgress(){
         changeCurrTime()
-        timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!) //Error here on Iphones
+        timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!)
+        
         playerProgress.setValue(timeRatio, animated: true)
     }
     
@@ -760,6 +913,22 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
             timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+            /*if recentSongs.count > 1{
+                for i in 0...recentSongs.count-1{
+                    if i == recentSongs.count{
+                        break
+                    }
+                    if recentSongs[i].persistentID == player.getNowPlayingItem()?.persistentID{
+                        recentAlbums.removeAtIndex(i)
+                        print("dup rem")
+                    }
+                }
+            }
+            recentSongs.append(player.getNowPlayingItem()!)
+            print("song added to recent \(player.getNowPlayingItem()!.title)")
+            if recentSongs.count == 51{
+                recentSongs.removeFirst()
+            }*/
         }
     }
     
@@ -837,7 +1006,9 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             else{
-                print("Resync Necessary: A - A")
+                cell.itemInfo.text = "Artist Info Retrieval Error"
+                print("Resync Necessary: A - A song")
+
             }
             
             if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
@@ -890,7 +1061,9 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             else{
-                print("Resync Necessary: A - A")
+                cell.itemInfo.text = "Artist Info Retrieval Error"
+                print("Resync Necessary: A - A alb")
+
             }
             
             if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
@@ -966,7 +1139,8 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             else{
-                print("Resync Necessary: A - A")
+                cell.itemInfo.text = "Artist Info Retrieval Error"
+                print("Resync Necessary: A - A subAlb")
             }
             
             if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
@@ -996,7 +1170,9 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             else{
-                print("Resync Necessary: A - A")
+                cell.itemInfo.text = "Artist Info Retrieval Error"
+                print("Resync Necessary: A - A subSong")
+
             }
             
             if let itemArtwork = item.valueForProperty(MPMediaItemPropertyArtwork){
