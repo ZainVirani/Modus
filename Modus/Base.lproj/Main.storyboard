@@ -398,6 +398,7 @@
                         <outlet property="playerProgress" destination="nXT-On-MrX" id="WJA-1p-Sfp"/>
                         <outlet property="playerTitle" destination="XEE-v6-9sR" id="WDw-Oc-beG"/>
                         <outlet property="playerTotTime" destination="XPH-Jp-0J3" id="H0w-BA-iSY"/>
+                        <outlet property="searchBar" destination="c6v-GW-TFy" id="RTT-WA-hRK"/>
                         <outlet property="sortType" destination="6js-wZ-fTb" id="vgz-bM-JVU"/>
                         <outlet property="subSortType" destination="PNY-jU-IIQ" id="tL3-7j-WN7"/>
                     </connections>

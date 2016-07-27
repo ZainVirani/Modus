@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  Modus
 //
-//  Created by Zain on 2016-06-27.
+//  Created by Zain Virani on 2016-06-27.
 //  Copyright © 2016 Modus Applications. All rights reserved.
 //
 
@@ -13,6 +13,7 @@ import MediaPlayer
 
 class musicLibraryController: UIViewController{
     
+    //INTERNAL VARS
     private var timer: NSTimer?
     private var timeRatio: Float32 = 0.00
     private var externalInputCheckTimer: NSTimer?
@@ -26,21 +27,13 @@ class musicLibraryController: UIViewController{
     //private var recentSongs: [MPMediaItem] = []
     private var shuffleQueue: [Int] = []
     private var shuffleIndex = 1
-    
     private var newSongCount = 0 //don't save to Realm
     private var oldSongCount = 0 //save to Realm on each sync
-
     private var oldPlayerState = 1 //starts paused
     private var oldPlayerItem: MPMediaEntityPersistentID?
     private var previousCellIndex = 0
     private var currentCellIndex = 0
-    
     private var firstPlay = false
-    
-    
-    private let realm = try! Realm()
-    private var appData: Results<AppData>?
-    //private var realmRecentAlbums: Results<RecentAlbums>?
     private var sortChanged = false
     private enum order{
         case normal
@@ -61,14 +54,23 @@ class musicLibraryController: UIViewController{
     }
     private var oldSubItem = oldSub.album
     private var oldSubRow = 0
+    private var oldAlbumSubSort = 0
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
     
-    @IBOutlet weak private var itemTable: UITableView!
+    //REALM VARS
+    private let realm = try! Realm()
+    private var appData: Results<AppData>?
+    //private var realmRecentAlbums: Results<RecentAlbums>?
     
+    //TABLE/SORT/SEARCH
+    @IBOutlet weak private var itemTable: UITableView!
     @IBOutlet weak private var sortType: UISegmentedControl!
     @IBOutlet weak private var subSortType: UISegmentedControl!
+    @IBOutlet weak private var searchBar: UISearchBar!
+    private let searchController = UISearchController(searchResultsController: nil)
     
+    //MINI PLAYER
     @IBOutlet weak private var playerArtwork: UIImageView!
     @IBOutlet weak private var playerTitle: UILabel!
     @IBOutlet weak private var playerInfo: UILabel!
@@ -78,6 +80,8 @@ class musicLibraryController: UIViewController{
     @IBOutlet weak private var playerProgress: UISlider!
     @IBOutlet weak private var playOrder: UIButton!
     
+    //viewDidLoad calls functions to retrieve app data, sync the user's iTunes library, initialize the system music player and populate the tableView.
+    //If the music queue is empty (no songs are on the device) the player is not initialized and the table is not populated
     override func viewDidLoad() {
         super.viewDidLoad()
         retreiveData()
@@ -85,10 +89,13 @@ class musicLibraryController: UIViewController{
         if musicQueue.isEmpty{
             return
         }
-        setupPlayer()
-        reloadTableInMainThread()
+        else{
+            setupPlayer()
+            reloadTableInMainThread()
+        }
     }
     
+    //retrieveData pulls app data from realm and stores it in the correct variable(s)
     func retreiveData(){
         appData = realm.objects(AppData) //retrieve app data
         //realmRecentAlbums = realm.objects(RecentAlbums)
@@ -126,13 +133,15 @@ class musicLibraryController: UIViewController{
         }*/
     }
     
+    //setupPlayer uses an instance of the Player class to set the first queue and starts a timer to check for external inputs (external from the app)
     func setupPlayer(){
         player.setQueue(musicQueue)
         playerProgress.setThumbImage(UIImage(named: "circle.png"), forState: UIControlState.Normal)
-        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true) //60FPS bois
+        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true)
         itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
     }
     
+    //isLibraryEmpty relays a message to the user if there are no songs in the music queue
     func isLibraryEmpty() -> Bool{
         if musicQueue.isEmpty{
             let alertController = UIAlertController(title: "modus", message:
@@ -145,9 +154,13 @@ class musicLibraryController: UIViewController{
         return false
     }
     
+    //syncLibrary scrapes the device for all "songs" (MPMediaItem), it also acquires "albums" and "artists"
+    //NOTE that albums and artists are not true albums and artists, simply a single MPMediaItem representing the album or artist duplicate albums and artists are removed, as well as empty artists
+    //isLibraryEmpty is called to make sure the user knows the app will crash when 0 songs are on the device
+    //the number of synced songs is saved to realm
     func syncLibrary(){
-        sortType.selectedSegmentIndex = 4
-        subSortType.selectedSegmentIndex = 0
+        sortType.selectedSegmentIndex = 4 //song
+        subSortType.selectedSegmentIndex = 0 //alphabetical
         musicQueue = MPMediaQuery.songsQuery().items!
         albumQueue = MPMediaQuery.albumsQuery().items!
         if albumQueue.count > 1{
@@ -167,7 +180,6 @@ class musicLibraryController: UIViewController{
             return
         }
         newSongCount = musicQueue.count - oldSongCount
-        
         print("New songs synced: \(newSongCount)\nTotal songs synced: \(musicQueue.count)")
         oldSongCount+=newSongCount
         newSongCount = 0
@@ -178,6 +190,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //removes duplicate albums from an alphabetically sorted list of albums
     func removeDuplicateAlbums(inout values: [MPMediaItem]){
         var j = 1
         var h = 0
@@ -193,6 +206,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //removes duplicate artists from an alphabetically sorted list of artists
     func removeDuplicateArtists(inout values: [MPMediaItem]){
         var h = 0
         for _ in 0...values.count-2{
@@ -205,6 +219,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //removes artists with 0 albums from a list of artists
     func removeEmptyArtists(inout artists: [MPMediaItem], albums: [MPMediaItem]){
         var removed = 0
         var i = 0
@@ -224,12 +239,16 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //re-populates table cell data
     func reloadTableInMainThread(){
         dispatch_async(dispatch_get_main_queue(), {() -> Void in
             self.itemTable.reloadData()
         })
     }
     
+    //This function is assigned to a cell's cellTapped fucntion when the itemToDisplay is .song or .subSong
+    //songTap takes the row of cell that was pressed (equivalent to the index of the item to be played in the queue) as a parameter and assigns it to currentCellIndex. The item is played by calling playItem()
+    //The previous cell's font is unbolded, and the current cell's font is bolded to indicate that the song indexed by the cell is playing
     func songTap(row: Int) {
         print("song chosen")
         currentCellIndex = row
@@ -241,6 +260,12 @@ class musicLibraryController: UIViewController{
             oldPlayerItem = player.getNowPlayingItem()?.persistentID
             firstPlay = true
         }
+        
+        //////////////////////////////////////////////////////////////////////////////////////
+        //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
+        //DO NOT DELETE                                                        DO NOT DELETE//
+        //////////////////////////////////////////////////////////////////////////////////////
+        
         /*if sortType.selectedSegmentIndex != 1 && sortType.selectedSegmentIndex != 4{
             if oldSubItem == oldSub.album{
                 if recentAlbums.count > 1{
@@ -304,6 +329,7 @@ class musicLibraryController: UIViewController{
         }*/
     }
     
+    //sliderChange handles track seeking while audio is playing
     @IBAction func sliderChange(sender: AnyObject) {
         let slider: UISlider = (sender as! UISlider)
         let setRatio = Double(slider.value)
@@ -312,6 +338,15 @@ class musicLibraryController: UIViewController{
         print("player skipping to \(stringFromTimeInterval(setTime))")
     }
     
+    //This function is assigned to a cell's cellTapped fucntion when the itemToDisplay is .album or .subAlbum
+    //albumTap takes an indexPath as a parameter
+    //The subMusicQueue is populated with songs that belong to the album that was tapped
+    //The subMusicQueue is then sorted by track number
+    
+    //TODO: sort by disc number then tracknumber
+    
+    //oldSubRow is used for non-persistent accurate recent sorting DO NOT DELETE
+    //The table is repopulated according to itemToDisplay (now .subSong i.e. songs belonging to the album tapped)
     func albumTap(path: NSIndexPath){
         subMusicQueue.removeAll()
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
@@ -340,11 +375,16 @@ class musicLibraryController: UIViewController{
             }
             return $0.albumTrackNumber < $1.albumTrackNumber
         }
-        oldSubRow = path.row
+        oldSubRow = path.row //DO NOT DELETE
         itemToDisplay = itemType.subSong
         reloadTableInMainThread()
     }
     
+    //This function is assigned to a cell's cellTapped fucntion when the itemToDisplay is .artist
+    //artistTap takes an indexPath as a parameter
+    //The subAlbumQueue is populated with albums that belong to the artist that was tapped
+    //The subAlbumQueue is then sorted by release date
+    //The table is repopulated according to itemToDisplay (now .subAlbum i.e. albums belonging to the artist tapped)
     func artistTap(path: NSIndexPath){
         oldSubItem = oldSub.subAlbum
         subAlbumQueue.removeAll()
@@ -383,6 +423,15 @@ class musicLibraryController: UIViewController{
         reloadTableInMainThread()
     }
     
+    //A timer tracking a song's current playback time is stopped
+    //If the sort type was changed and a song was tapped a new "queue" must be given to the system music player
+    //The cell at indexPath's font is bolded to indicate it's status to the user (playing)
+    //The mini-player's artwork, title, and info are set to the cell's artwork, title, info
+    //The itemIndex (cell row) is passed to the system player (the item at index in the queue is set as the now playing item)
+    //The mini-player's duration label is set and a timer to change the slider value is initialized
+    //The player is started and the play buttion image is set to "pause.png"
+    //The queue keeping track of previously played shuffled items is reset and if the current play order is shuffle,
+    //the now playing song is appended
     func playItem(itemIndex: Int){
         timer?.invalidate()
         //check if new queue needed
@@ -407,7 +456,7 @@ class musicLibraryController: UIViewController{
         }
         player.setNowplayingItem(itemIndex)
         playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
-        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
         player.play()
         if let image = UIImage(named: "pause.png") {
             playerPlayButton.setImage(image, forState: .Normal)
@@ -420,6 +469,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //If the sortType segmentedIndex is changed the corresponding queue is resorted according to sort and subSort types
     @IBAction func changeSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
@@ -430,20 +480,22 @@ class musicLibraryController: UIViewController{
             reSort(&musicQueue)
         }
         else if sort == 3{
-            oldSubItem = oldSub.album
+            oldSubItem = oldSub.album //oldSubItem keeps track of where the "Back" button redirects to
             reSort(&albumQueue)
         }
         else if sort == 2{
             reSort(&artistQueue)
         }
         else if sort == 1{
-            reSort(&subMusicQueue)
+            reSort(&subMusicQueue) //irrelevant parameter
         }
         else if sort == 0{
             
         }
     }
     
+    //If the subSortType segmentedIndex is changed the corresponding queue is resorted according to sort and subSort types
+    //If the subSortType is changed when none is selected that means the "Back Button" was pressed, and the previousTable sorting is reloaded
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
@@ -459,7 +511,7 @@ class musicLibraryController: UIViewController{
             reSort(&artistQueue)
         }
         else if sort == 1{
-            reSort(&subMusicQueue)
+            reSort(&subMusicQueue) //irrelevant parameter
         }
         else if sort == 0{
             
@@ -470,27 +522,29 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //We have been using oldSubItem to keep track of where the user is and where they would want to go back to after viewing a sub-queue of songs or albums
+    //Once back is pressed, the user wants to go back to the exact same sort arrangement they had prior to entering a sub-queue view
     func previousTable(){
-        if itemToDisplay == itemType.subSong{
+        if itemToDisplay == itemType.subSong{ //current view displays songs, so we want to go back to displaying the albums
             switch oldSubItem{
-            case .album:
+            case .album: //album sorting
                 print("back to alb")
                 sortType.selectedSegmentIndex = 3
-                subSortType.selectedSegmentIndex = 0
+                subSortType.selectedSegmentIndex = oldAlbumSubSort
                 reSort(&albumQueue)
-            case .subAlbum:
+            case .subAlbum: //a list of subAlbums from a specific artists (meaning we can use the same subAlbumQueue to display them)
                 print("back to subAlb")
                 subSortType.selectedSegmentIndex = -1
                 itemToDisplay = itemType.subAlbum
                 reloadTableInMainThread()
-            case .recentAlb:
+            case .recentAlb: //back to the list of recently played albums
                 print("back to recAlb")
                 sortType.selectedSegmentIndex = 1
                 subSortType.selectedSegmentIndex = 1
                 reSort(&subAlbumQueue)
             }
         }
-        else if itemToDisplay == itemType.subAlbum{
+        else if itemToDisplay == itemType.subAlbum{ //current view displays albums, so we want to go back to displaying the artists
             print("back to art")
             sortType.selectedSegmentIndex = 2
             subSortType.selectedSegmentIndex = 0
@@ -498,6 +552,10 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //Acquires recently played songs.
+    //The last played date of a song is saved via the system music player WHEN A SONG COMPLETES
+    //I have written code to replace this with a version that saves recently played songs to a queue when it starts but it is not persistent between app launches (see above)
+    //getRecentSongs sorts the musicQueue by lastPlayedDate (newest first) and then assigns the first 50 songs to the subMusicQueue
     func getRecentSongs(){
         var error = false
         musicQueue.sortInPlace{
@@ -531,6 +589,8 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //getRecentAlbums assigns an album to the subAlbumQueue from the complete albumQueue for each song in the subMusicQueue after running getRecentSongs
+    //in other words it gets the most recently played albums for the last 50 songs (i.e. <= 50 albums will be on this list)
     func getRecentAlbums(){
         getRecentSongs()
         subAlbumQueue.removeAll()
@@ -558,7 +618,11 @@ class musicLibraryController: UIViewController{
         }
 
     }
-
+    
+    //reSort re-sorts an array based on the segmented indexes sortType and subSortType
+    //the sortTypes are: Song, Album, Artist, Recent, Playlist
+    //the subSortTypes vary depending on the sortType.selectedSegmentIndex
+    //for sortType.selectedSegmentIndex == 1 [RECENT], we use getRecentTYPE() instead of sorting the query parameter because a different array is required for each subSortType
     func reSort(inout query: [MPMediaItem]){
         var error = false
         let sort = sortType.selectedSegmentIndex
@@ -590,6 +654,7 @@ class musicLibraryController: UIViewController{
                 query.sortInPlace{
                     return $0.albumTitle < $1.albumTitle
                 }
+                oldAlbumSubSort = 0
                 print("sort: album alpha")
             }
             else if subSort == 1{
@@ -618,6 +683,7 @@ class musicLibraryController: UIViewController{
                     
                     self.presentViewController(alertController, animated: true, completion: nil)
                 }
+                oldAlbumSubSort = 1
                 print("sort: album artist")
             }
             reloadTableInMainThread()
@@ -684,15 +750,17 @@ class musicLibraryController: UIViewController{
         return
     }
     
+    //the "Sync Library" button action simply calls syncLibrary()
     @IBAction func syncLibButton(sender: AnyObject) {
         syncLibrary()
     }
     
+    //This function uses the raw state of the player to decide whether to switch to a play or pause button, and correspondingly starts or pauses player playback
     @IBAction func playerPlayButton(sender: AnyObject) {
         if firstPlay == true{
             if player.getRawState() == 2{ //if paused
                 print("play pressed")
-                timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+                timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
                 player.play()
                 if let image = UIImage(named: "pause.png") {
                     playerPlayButton.setImage(image, forState: .Normal)
@@ -711,6 +779,9 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //This function is called by the externalInputCheckTimer periodically
+    //When the system player's state is changed, either by the player in the lock-screen or on the toolbar, the UI updates accordingly
+    //Similarly, when a song is changed by an external player, the UI updates accordingly
     func checkExternalButtonPress(){
         if firstPlay == true && oldPlayerState == player.getRawState(){
             if player.getRawState() == 2{ //if paused
@@ -738,7 +809,9 @@ class musicLibraryController: UIViewController{
         }
     }
     
-    
+    //When the user presses next, this function decides which song to play next, or whether or not it has reached the end of the queue and the player should pause
+    //It also handles play order, i.e. if the play order is shuffle it finds a random song to play or continues down the shuffleQueue
+    //If the play order is repeat it acts as normal (repeat order only comes into play when the song reaches the end of its duration)
     @IBAction func playerNextButton(sender: AnyObject) {
         print("next pressed")
         if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && (orderToPlay == order.normal || orderToPlay == order.repeatItem){ //if a song is in the "slot"
@@ -763,6 +836,12 @@ class musicLibraryController: UIViewController{
                 updateMiniPlayer()
             }
         }
+        
+        //////////////////////////////////////////////////////////////////////////////////////
+        //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
+        //DO NOT DELETE                                                        DO NOT DELETE//
+        //////////////////////////////////////////////////////////////////////////////////////
+        
         /*if recentSongs.count > 1{
             for i in 0...recentSongs.count-1{
                 if i == recentSongs.count{
@@ -781,6 +860,10 @@ class musicLibraryController: UIViewController{
         }*/
     }
     
+    //When the user presses previous, this function decides which song to play next, or whether or not it has reached the beginning of the queue and the player should repeat the first song
+    //It also handles play order, i.e. if the play order is shuffle it goes to the previous song in the shuffleQueue
+    //If the play order is repeat it acts as normal (repeat order only comes into play when the song reaches the end of its duration)
+    //Additionally, if the currently playing song's playback time is above 4 seconds it goes back to the beginning of the song
     @IBAction func playerPrevButton(sender: AnyObject) {
         print("prev pressed")
         if firstPlay == true && currentCellIndex != 0 && (orderToPlay == order.normal || orderToPlay == order.repeatItem){
@@ -806,6 +889,12 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
+        
+        //////////////////////////////////////////////////////////////////////////////////////
+        //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
+        //DO NOT DELETE                                                        DO NOT DELETE//
+        //////////////////////////////////////////////////////////////////////////////////////
+        
         /*if recentSongs.count > 1{
             for i in 0...recentSongs.count-1{
                 if i == recentSongs.count{
@@ -824,6 +913,7 @@ class musicLibraryController: UIViewController{
         }*/
     }
     
+    //This function updates the mini-player with information from the now playing item
     func updateMiniPlayer(){
         let nowPlaying = player.getNowPlayingItem()!
         
@@ -854,6 +944,7 @@ class musicLibraryController: UIViewController{
         playerTotTime.text = stringFromTimeInterval(nowPlaying.playbackDuration)
     }
     
+    //This function unbolds the cell text at row previousCellIndex, and sets previousCellIndex to the itemIndex (for the next time this function is called)
     func unBoldPrevItem(itemIndex: Int){
         let prevIndexPath = NSIndexPath(forRow: previousCellIndex, inSection: 0)
         if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
@@ -864,6 +955,7 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //A simple converter from NSTimeInterval to a string format AB:YZ where AB is minutes and YZ is seconds
     func stringFromTimeInterval(interval: NSTimeInterval) -> String {
         let interval = Int(interval)
         let seconds = interval % 60
@@ -871,13 +963,21 @@ class musicLibraryController: UIViewController{
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
+    //This function is called by timer every millisecond
+    //It updates the current playback time by way of ratio (current time / total time) and sets that value on the slider
+    //It also calls a function to change the currTime label on the miniplayer
     func audioProgress(){
         changeCurrTime()
         timeRatio = Float32(player.getCurrentPlaybackTime() / (player.getNowPlayingItem()?.playbackDuration)!)
-        
         playerProgress.setValue(timeRatio, animated: true)
     }
     
+    //This function handles changes to the currTime label on the miniplayer
+    //It also makes sure trackshifting is handled correctly when currTime.text = totTime.text
+    //Trackshifting plays the next song in the queue when in normal play order (or pauses if it is the last song in the queue)
+    //If the order is shuffle it either continues down the shuffleQueue or finds a new random song
+    //If the order is repeat it skips to the beginning of the current track
+    //It then reinitializes timer
     func changeCurrTime(){
         playerCurrTime.text = stringFromTimeInterval(player.getCurrentPlaybackTime())
         if playerCurrTime.text == playerTotTime.text && firstPlay == true{
@@ -912,7 +1012,13 @@ class musicLibraryController: UIViewController{
             case .repeatItem:
                 player.skipToBeginning()
             }
-            timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true) //60FPS bois
+            timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
+            
+            //////////////////////////////////////////////////////////////////////////////////////
+            //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
+            //DO NOT DELETE                                                        DO NOT DELETE//
+            //////////////////////////////////////////////////////////////////////////////////////
+            
             /*if recentSongs.count > 1{
                 for i in 0...recentSongs.count-1{
                     if i == recentSongs.count{
@@ -932,6 +1038,8 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //This function handles changes in the play order
+    //It correctly sets the orderToPlay enumeration based on the current play order, and also sets the playOrder button image accordingly
     @IBAction func playOrderChanged(sender: AnyObject) {
         switch orderToPlay{
         case .normal:
@@ -956,17 +1064,21 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    //This function handles unwinds from the TagEditor or FullPlayer
     @IBAction func unwindFromOtherScreen(segue: UIStoryboardSegue){
         
     }
 }
 
+//This extension handles changes in the itemTable
 extension musicLibraryController: UITableViewDataSource {
     
+    //Multiple sections not needed
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         return 1
     }
     
+    //Returns number of cells needed based on the queue or subQueue
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch itemToDisplay {
         case .song:
@@ -982,6 +1094,12 @@ extension musicLibraryController: UITableViewDataSource {
         }
     }
     
+    //Populates the table using items in the queue
+    //The queue accessed depends on what item needs to be displayed
+    //The item to display in the current cell must correspond with the index of the queue
+    //The cell's title, info, artwork, and item duration are all set accordingly
+    //If the item is an album or artist the item duration is empty
+    //If the item is a song or subSong AND the item is currently playing, its text is bolded (if not, it is normal)
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCellWithIdentifier("itemCell", forIndexPath: indexPath) as! itemCell
@@ -1202,6 +1320,8 @@ extension musicLibraryController: UITableViewDataSource {
     }
 }
 
+//This extention calls specific functions when a cell is tapped
+//The function called depends on the type of item being displayed in the cell
 extension musicLibraryController: UITableViewDelegate {
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         switch itemToDisplay {
