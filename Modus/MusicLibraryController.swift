@@ -43,6 +43,8 @@ class musicLibraryController: UIViewController{
     private var currentCellIndex = 0
     private var firstPlay = false
     private var sortChanged = false
+    private var artistTapTitle = ""
+    private var albumTapInSearch = false
     
     private enum order{
         case normal
@@ -87,8 +89,7 @@ class musicLibraryController: UIViewController{
     @IBOutlet weak private var searchBar: UISearchBar!
     private var oldSearchText = ""
     private var oldSearchDisp = itemType.song
-    private var backToSearch = true
-    private let searchController = UISearchController(searchResultsController: nil)
+    private var backFromSearch = true
     
     //MINI PLAYER
     
@@ -370,6 +371,7 @@ class musicLibraryController: UIViewController{
     //oldSubRow is used for non-persistent accurate recent sorting DO NOT DELETE
     //The table is repopulated according to itemToDisplay (now .subSong i.e. songs belonging to the album tapped)
     func albumTap(path: NSIndexPath){
+        searchBar.userInteractionEnabled = false
         subMusicQueue.removeAll()
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
         subSortType.setTitle("Back", forSegmentAtIndex: 0)
@@ -400,6 +402,9 @@ class musicLibraryController: UIViewController{
             return $0.albumTrackNumber < $1.albumTrackNumber
         }
         oldSubRow = path.row //DO NOT DELETE
+        if oldSearchText != "" && preSearchSort == 2{
+            albumTapInSearch = true
+        }
         itemToDisplay = itemType.subSong
         reloadTableInMainThread()
     }
@@ -410,6 +415,7 @@ class musicLibraryController: UIViewController{
     //The subAlbumQueue is then sorted by release date
     //The table is repopulated according to itemToDisplay (now .subAlbum i.e. albums belonging to the artist tapped)
     func artistTap(path: NSIndexPath){
+        searchBar.userInteractionEnabled = false
         oldSubItem = oldSub.subAlbum
         subAlbumQueue.removeAll()
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
@@ -423,6 +429,7 @@ class musicLibraryController: UIViewController{
             subAlbumQueue = albumQueue.filter { (item) -> Bool in
                 return item.artist == cell.itemTitle.text
             }
+            artistTapTitle = cell.itemTitle.text!
         }
         print("sub-album count: \(subAlbumQueue.count)")
         subAlbumQueue.sortInPlace{
@@ -498,6 +505,7 @@ class musicLibraryController: UIViewController{
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
         subSortType.setEnabled(true, forSegmentAtIndex: 1)
         subSortType.selectedSegmentIndex = 0
+        searchBar.userInteractionEnabled = true
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
             reSort(&musicQueue)
@@ -518,7 +526,8 @@ class musicLibraryController: UIViewController{
     }
     
     //If the subSortType segmentedIndex is changed the corresponding queue is resorted according to sort and subSort types
-    //If the subSortType is changed when none is selected that means the "Back Button" was pressed, and the previousTable sorting is reloaded
+    //If the subSortType is changed when -1 is selected that means the "Back Button" was pressed, and the previousTable sorting is reloaded
+    //If the subSortType is changed when -2 is selected that means the "Cancel Button" was pressed, and the sort previous to searching is reloaded
     @IBAction func changeSubSort(sender: AnyObject) {
         sortChanged = true
         subSortType.setEnabled(true, forSegmentAtIndex: 0)
@@ -526,18 +535,22 @@ class musicLibraryController: UIViewController{
         let sort = sortType.selectedSegmentIndex
         if sort == 4{
             reSort(&musicQueue)
+            searchBar.userInteractionEnabled = true
         }
         else if sort == 3{
             reSort(&albumQueue)
+            searchBar.userInteractionEnabled = true
         }
         else if sort == 2{
             reSort(&artistQueue)
+            searchBar.userInteractionEnabled = true
         }
         else if sort == 1{
             reSort(&subMusicQueue) //irrelevant parameter
+            searchBar.userInteractionEnabled = true
         }
         else if sort == 0{
-            
+            searchBar.userInteractionEnabled = true
         }
         else if sort == -1{
             print("back pressed")
@@ -549,22 +562,26 @@ class musicLibraryController: UIViewController{
             oldSearchText = ""
             sortType.selectedSegmentIndex = preSearchSort
             subSortType.selectedSegmentIndex = preSearchSubSort
-            backToSearch = true
+            backFromSearch = true
+            searchBar.userInteractionEnabled = true
             reSort(&artistQueue)
         }
     }
     
     //We have been using oldSubItem to keep track of where the user is and where they would want to go back to after viewing a sub-queue of songs or albums
     //Once back is pressed, the user wants to go back to the exact same sort arrangement they had prior to entering a sub-queue view
+    //If a search was completed before pressing Cancel, the user is returned to that search
     func previousTable(){
-        if oldSearchText != ""{
+        if oldSearchText != "" && albumTapInSearch == false{
+            print("back to search")
             searchBar.text = oldSearchText
             itemToDisplay = oldSearchDisp
-            backToSearch = false
+            backFromSearch = false
             searchBarSearchButtonClicked(searchBar)
             return
         }
         if itemToDisplay == itemType.subSong{ //current view displays songs, so we want to go back to displaying the albums
+            albumTapInSearch = false
             switch oldSubItem{
             case .album: //album sorting
                 print("back to alb")
@@ -589,6 +606,7 @@ class musicLibraryController: UIViewController{
             subSortType.selectedSegmentIndex = 0
             reSort(&artistQueue)
         }
+        searchBar.userInteractionEnabled = true
     }
     
     //Acquires recently played songs.
@@ -785,6 +803,11 @@ class musicLibraryController: UIViewController{
 
         }
         print("re-sort unknown")
+        let alertController = UIAlertController(title: "modus", message:
+            "Please select a sort method.", preferredStyle: UIAlertControllerStyle.Alert)
+        alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+        
+        self.presentViewController(alertController, animated: true, completion: nil)
         reloadTableInMainThread()
         return
     }
@@ -845,6 +868,7 @@ class musicLibraryController: UIViewController{
             oldPlayerItem = player.getNowPlayingIndex()
             currentCellIndex = player.getNowPlayingIndex()!
             previousCellIndex = currentCellIndex
+            updateMiniPlayer()
         }
         if firstPlay == false{
             player.pause()
@@ -859,7 +883,8 @@ class musicLibraryController: UIViewController{
         print("next pressed")
         if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && (orderToPlay == order.normal || orderToPlay == order.repeatItem){ //if a song is in the "slot"
             currentCellIndex += 1
-            player.playNext()
+            player.setNowplayingItem(currentCellIndex)
+            player.play()
             unBoldPrevItem(currentCellIndex)
             boldCurrItem(currentCellIndex)
             updateMiniPlayer()
@@ -868,6 +893,7 @@ class musicLibraryController: UIViewController{
             if shuffleIndex == 1{
                 currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
                 player.setNowplayingItem(currentCellIndex)
+                player.play()
                 shuffleQueue.append(currentCellIndex)
                 unBoldPrevItem(currentCellIndex)
                 boldCurrItem(currentCellIndex)
@@ -877,6 +903,7 @@ class musicLibraryController: UIViewController{
                 shuffleIndex -= 1
                 currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex]
                 player.setNowplayingItem(currentCellIndex)
+                player.play()
                 unBoldPrevItem(currentCellIndex)
                 boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
@@ -918,7 +945,8 @@ class musicLibraryController: UIViewController{
         if firstPlay == true && currentCellIndex != 0 && (orderToPlay == order.normal || orderToPlay == order.repeatItem){
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
                 currentCellIndex += -1
-                player.playPrev()
+                player.setNowplayingItem(currentCellIndex)
+                player.play()
                 unBoldPrevItem(currentCellIndex)
                 boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
@@ -931,6 +959,7 @@ class musicLibraryController: UIViewController{
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4) && shuffleQueue.count >= (shuffleIndex+1){
                 currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex - 1]
                 player.setNowplayingItem(currentCellIndex)
+                player.play()
                 unBoldPrevItem(currentCellIndex)
                 boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
@@ -976,10 +1005,10 @@ class musicLibraryController: UIViewController{
         
         if let artistInfo = nowPlaying.valueForProperty(MPMediaItemPropertyArtist) as? String {
             if let albumInfo = nowPlaying.valueForProperty(MPMediaItemPropertyAlbumTitle) as? String {
-                playerInfo.text = "\(artistInfo) - \(albumInfo) - \(stringFromTimeInterval(nowPlaying.playbackDuration))"
+                playerInfo.text = "\(artistInfo) - \(albumInfo)"
             }
             else{
-                playerInfo.text = "\(artistInfo) - \(stringFromTimeInterval(nowPlaying.playbackDuration))"
+                playerInfo.text = "\(artistInfo)"
             }
         }
         else{
@@ -1055,6 +1084,7 @@ class musicLibraryController: UIViewController{
                     currentCellIndex += 1
                     player.playNext()
                     unBoldPrevItem(currentCellIndex)
+                    boldCurrItem(currentCellIndex)
                     updateMiniPlayer()
                 }
                 else{
@@ -1066,6 +1096,7 @@ class musicLibraryController: UIViewController{
                     player.setNowplayingItem(currentCellIndex)
                     shuffleQueue.append(currentCellIndex)
                     unBoldPrevItem(currentCellIndex)
+                    boldCurrItem(currentCellIndex)
                     updateMiniPlayer()
                 }
                 else if shuffleIndex > 1{
@@ -1073,6 +1104,7 @@ class musicLibraryController: UIViewController{
                     currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex]
                     player.setNowplayingItem(currentCellIndex)
                     unBoldPrevItem(currentCellIndex)
+                    boldCurrItem(currentCellIndex)
                     updateMiniPlayer()
                 }
             case .repeatItem:
@@ -1325,7 +1357,13 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             else{
-                cell.itemInfo.text = "Artist Info Retrieval Error"
+                if artistTapTitle != ""{
+                    cell.itemInfo.text = artistTapTitle
+                    artistTapTitle = ""
+                }
+                else{
+                    cell.itemInfo.text = "Artist Info Retrieval Error"
+                }
                 print("Resync Necessary: A - A subAlb")
             }
             
@@ -1357,6 +1395,7 @@ extension musicLibraryController: UITableViewDataSource {
             }
             else{
                 cell.itemInfo.text = "Artist Info Retrieval Error"
+                
                 print("Resync Necessary: A - A subSong")
 
             }
@@ -1462,13 +1501,16 @@ extension musicLibraryController: UISearchBarDelegate {
         print("timer reinitialized")
     }
     
+    //Filters a subQueue based on the current queue displayed (i.e. if artists is displayed a search will show artists filtered for search terms)
+    //This function also keeps track of search backtracking
     func searchBarSearchButtonClicked(searchBar: UISearchBar){
         if let searchTerm = searchBar.text{
-            oldSearchText = searchTerm
-            if backToSearch == true{
+            //print("\(preSearchSort) \(preSearchSubSort)")
+            if backFromSearch == true && oldSearchText == ""{
                 preSearchSort = sortType.selectedSegmentIndex
                 preSearchSubSort = subSortType.selectedSegmentIndex
             }
+            oldSearchText = searchTerm
             subSortType.setEnabled(true, forSegmentAtIndex: 0)
             subSortType.setTitle("Cancel", forSegmentAtIndex: 0)
             subSortType.setEnabled(false, forSegmentAtIndex: 1)
