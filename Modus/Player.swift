@@ -75,6 +75,10 @@ class Player{
         return audio.nowPlayingItem
     }
     
+    func getNowPlayingIndex() -> Int?{
+        return audio.indexOfNowPlayingItem
+    }
+    
     func setNowplayingItem(index: Int){
         if index < 0 || index > mediaItems.count - 1 {
             audio.nowPlayingItem = nil

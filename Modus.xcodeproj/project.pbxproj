@@ -14,6 +14,7 @@
 		186EC78B1D21A5CA00E3AF4B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7891D21A5CA00E3AF4B /* LaunchScreen.storyboard */; };
 		187359601D21A97600FEFE45 /* ItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1873595F1D21A97600FEFE45 /* ItemCell.swift */; };
 		1879A2311D4813FE00348D5D /* RecentAlbums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1879A2301D4813FE00348D5D /* RecentAlbums.swift */; };
+		1879A2341D4ABE0E00348D5D /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 1879A2331D4ABE0E00348D5D /* dummy.m */; };
 		18AC62FA1D36C54D001390E7 /* MusicPlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC62F91D36C54D001390E7 /* MusicPlayerController.swift */; };
 		18AC63061D38191F001390E7 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC63051D38191F001390E7 /* Player.swift */; };
 		18D41CBE1D3564F000DE632D /* AppData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D41CBD1D3564F000DE632D /* AppData.swift */; };
@@ -30,6 +31,8 @@
 		186EC78C1D21A5CA00E3AF4B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1873595F1D21A97600FEFE45 /* ItemCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ItemCell.swift; sourceTree = "<group>"; };
 		1879A2301D4813FE00348D5D /* RecentAlbums.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecentAlbums.swift; sourceTree = "<group>"; };
+		1879A2321D4ABE0D00348D5D /* Modus-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Modus-Bridging-Header.h"; sourceTree = "<group>"; };
+		1879A2331D4ABE0E00348D5D /* dummy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = dummy.m; sourceTree = "<group>"; };
 		18AC62F91D36C54D001390E7 /* MusicPlayerController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MusicPlayerController.swift; sourceTree = "<group>"; };
 		18AC63051D38191F001390E7 /* Player.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
 		18D41CBD1D3564F000DE632D /* AppData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppData.swift; sourceTree = "<group>"; };
@@ -77,6 +80,8 @@
 				18AC62FD1D36DB02001390E7 /* supporting files */,
 				18AC62FC1D36DAEB001390E7 /* views */,
 				18AC62FB1D36DAD7001390E7 /* model */,
+				1879A2331D4ABE0E00348D5D /* dummy.m */,
+				1879A2321D4ABE0D00348D5D /* Modus-Bridging-Header.h */,
 			);
 			path = Modus;
 			sourceTree = "<group>";
@@ -280,6 +285,7 @@
 				187359601D21A97600FEFE45 /* ItemCell.swift in Sources */,
 				18AC63061D38191F001390E7 /* Player.swift in Sources */,
 				1879A2311D4813FE00348D5D /* RecentAlbums.swift in Sources */,
+				1879A2341D4ABE0E00348D5D /* dummy.m in Sources */,
 				18D41CBE1D3564F000DE632D /* AppData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -396,11 +402,15 @@
 			baseConfigurationReference = 1BC08BED9E20C6D1F129D769 /* Pods-Modus.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.Modus;
 				PRODUCT_NAME = modus;
+				SWIFT_OBJC_BRIDGING_HEADER = "Modus/Modus-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Debug;
 		};
@@ -409,11 +419,14 @@
 			baseConfigurationReference = 220D8FDF54D73ACAB4A0FAD1 /* Pods-Modus.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.Modus;
 				PRODUCT_NAME = modus;
+				SWIFT_OBJC_BRIDGING_HEADER = "Modus/Modus-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Release;
 		};

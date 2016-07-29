@@ -14,63 +14,84 @@ import MediaPlayer
 class musicLibraryController: UIViewController{
     
     //INTERNAL VARS
+    
     private var timer: NSTimer?
     private var timeRatio: Float32 = 0.00
+    //TODO: replace externalICT with unlock notification and minibar down notification
+        //var instanceOfCustomObject: LockViewController = LockViewController()
+        //instanceOfCustomObject.registerAppforDetectLockState();
     private var externalInputCheckTimer: NSTimer?
+    
     private var player = Player()
+    
     private var musicQueue: [MPMediaItem] = []
     private var albumQueue: [MPMediaItem] = []
     private var artistQueue: [MPMediaItem] = []
     private var subAlbumQueue: [MPMediaItem] = []
     private var subMusicQueue: [MPMediaItem] = []
+    private var subArtistQueue: [MPMediaItem] = []
     //private var recentAlbums: [MPMediaItem] = []
     //private var recentSongs: [MPMediaItem] = []
+    
     private var shuffleQueue: [Int] = []
     private var shuffleIndex = 1
     private var newSongCount = 0 //don't save to Realm
     private var oldSongCount = 0 //save to Realm on each sync
     private var oldPlayerState = 1 //starts paused
-    private var oldPlayerItem: MPMediaEntityPersistentID?
+    private var oldPlayerItem: Int?
     private var previousCellIndex = 0
     private var currentCellIndex = 0
     private var firstPlay = false
     private var sortChanged = false
+    
     private enum order{
         case normal
         case shuffle
         case repeatItem
     }
+    
     private enum itemType{
         case song
         case album
         case artist
         case subAlbum
         case subSong
+        case subArtist
     }
+    
     private enum oldSub{
         case subAlbum
         case album
         case recentAlb
     }
+    
     private var oldSubItem = oldSub.album
     private var oldSubRow = 0
-    private var oldAlbumSubSort = 0
+    private var oldAlbumSubSort = -1
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
+    private var preSearchSort = -1
+    private var preSearchSubSort = -1
     
     //REALM VARS
+    
     private let realm = try! Realm()
     private var appData: Results<AppData>?
     //private var realmRecentAlbums: Results<RecentAlbums>?
     
     //TABLE/SORT/SEARCH
+    
     @IBOutlet weak private var itemTable: UITableView!
     @IBOutlet weak private var sortType: UISegmentedControl!
     @IBOutlet weak private var subSortType: UISegmentedControl!
     @IBOutlet weak private var searchBar: UISearchBar!
+    private var oldSearchText = ""
+    private var oldSearchDisp = itemType.song
+    private var backToSearch = true
     private let searchController = UISearchController(searchResultsController: nil)
     
     //MINI PLAYER
+    
     @IBOutlet weak private var playerArtwork: UIImageView!
     @IBOutlet weak private var playerTitle: UILabel!
     @IBOutlet weak private var playerInfo: UILabel!
@@ -134,11 +155,15 @@ class musicLibraryController: UIViewController{
     }
     
     //setupPlayer uses an instance of the Player class to set the first queue and starts a timer to check for external inputs (external from the app)
+    //This function also sets up a few other settings that don't fit in to the scope of other functions
     func setupPlayer(){
         player.setQueue(musicQueue)
         playerProgress.setThumbImage(UIImage(named: "circle.png"), forState: UIControlState.Normal)
         externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true)
         itemTable.separatorStyle = UITableViewCellSeparatorStyle.SingleLineEtched
+        searchBar.delegate = self
+        let textFieldInsideSearchBar = searchBar.valueForKey("searchField") as? UITextField
+        textFieldInsideSearchBar?.textColor = UIColor.whiteColor()
     }
     
     //isLibraryEmpty relays a message to the user if there are no songs in the music queue
@@ -256,8 +281,8 @@ class musicLibraryController: UIViewController{
         if previousCellIndex != currentCellIndex{
             unBoldPrevItem(currentCellIndex)
         }
+        oldPlayerItem = player.getNowPlayingIndex()
         if firstPlay == false{
-            oldPlayerItem = player.getNowPlayingItem()?.persistentID
             firstPlay = true
         }
         
@@ -342,9 +367,6 @@ class musicLibraryController: UIViewController{
     //albumTap takes an indexPath as a parameter
     //The subMusicQueue is populated with songs that belong to the album that was tapped
     //The subMusicQueue is then sorted by track number
-    
-    //TODO: sort by disc number then tracknumber
-    
     //oldSubRow is used for non-persistent accurate recent sorting DO NOT DELETE
     //The table is repopulated according to itemToDisplay (now .subSong i.e. songs belonging to the album tapped)
     func albumTap(path: NSIndexPath){
@@ -362,6 +384,8 @@ class musicLibraryController: UIViewController{
             }
         }
         print("sub-music count: \(subMusicQueue.count)")
+        
+        //TODO: sort by disc number then tracknumber
         subMusicQueue.sortInPlace{
             if $0.albumTrackNumber == 0 || $1.albumTrackNumber == 0{
                 print("track number error in sorting")
@@ -438,7 +462,6 @@ class musicLibraryController: UIViewController{
         if sortChanged{
             if itemToDisplay == itemType.song{
                 player.setQueue(musicQueue) //set player queue to resorted queue
-                
             }
             else if itemToDisplay == itemType.subSong{
                 player.setQueue(subMusicQueue) //set player queue to resorted queue
@@ -520,11 +543,27 @@ class musicLibraryController: UIViewController{
             print("back pressed")
             previousTable()
         }
+        else if sort == -2{
+            print("cancel search")
+            searchBar.text = ""
+            oldSearchText = ""
+            sortType.selectedSegmentIndex = preSearchSort
+            subSortType.selectedSegmentIndex = preSearchSubSort
+            backToSearch = true
+            reSort(&artistQueue)
+        }
     }
     
     //We have been using oldSubItem to keep track of where the user is and where they would want to go back to after viewing a sub-queue of songs or albums
     //Once back is pressed, the user wants to go back to the exact same sort arrangement they had prior to entering a sub-queue view
     func previousTable(){
+        if oldSearchText != ""{
+            searchBar.text = oldSearchText
+            itemToDisplay = oldSearchDisp
+            backToSearch = false
+            searchBarSearchButtonClicked(searchBar)
+            return
+        }
         if itemToDisplay == itemType.subSong{ //current view displays songs, so we want to go back to displaying the albums
             switch oldSubItem{
             case .album: //album sorting
@@ -799,10 +838,13 @@ class musicLibraryController: UIViewController{
                 }
             }
         }
-        if firstPlay == true && oldPlayerItem != player.getNowPlayingItem()?.persistentID{
-            print("change externally pressed")
-            oldPlayerItem = player.getNowPlayingItem()?.persistentID
-            reloadTableInMainThread()
+        if firstPlay == true && oldPlayerItem != player.getNowPlayingIndex(){
+            print("song changed")
+            unBoldPrevItem(oldPlayerItem!)
+            boldCurrItem(player.getNowPlayingIndex()!)
+            oldPlayerItem = player.getNowPlayingIndex()
+            currentCellIndex = player.getNowPlayingIndex()!
+            previousCellIndex = currentCellIndex
         }
         if firstPlay == false{
             player.pause()
@@ -813,11 +855,13 @@ class musicLibraryController: UIViewController{
     //It also handles play order, i.e. if the play order is shuffle it finds a random song to play or continues down the shuffleQueue
     //If the play order is repeat it acts as normal (repeat order only comes into play when the song reaches the end of its duration)
     @IBAction func playerNextButton(sender: AnyObject) {
+        timer!.invalidate()
         print("next pressed")
         if firstPlay == true && (currentCellIndex+1) != player.getQueueCount() && (orderToPlay == order.normal || orderToPlay == order.repeatItem){ //if a song is in the "slot"
             currentCellIndex += 1
             player.playNext()
             unBoldPrevItem(currentCellIndex)
+            boldCurrItem(currentCellIndex)
             updateMiniPlayer()
         }
         else if firstPlay == true && orderToPlay == order.shuffle{
@@ -826,6 +870,7 @@ class musicLibraryController: UIViewController{
                 player.setNowplayingItem(currentCellIndex)
                 shuffleQueue.append(currentCellIndex)
                 unBoldPrevItem(currentCellIndex)
+                boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
             }
             else if shuffleIndex > 1{
@@ -833,9 +878,12 @@ class musicLibraryController: UIViewController{
                 currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex]
                 player.setNowplayingItem(currentCellIndex)
                 unBoldPrevItem(currentCellIndex)
+                boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
             }
         }
+        oldPlayerItem = player.getNowPlayingIndex()
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
         
         //////////////////////////////////////////////////////////////////////////////////////
         //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
@@ -865,12 +913,14 @@ class musicLibraryController: UIViewController{
     //If the play order is repeat it acts as normal (repeat order only comes into play when the song reaches the end of its duration)
     //Additionally, if the currently playing song's playback time is above 4 seconds it goes back to the beginning of the song
     @IBAction func playerPrevButton(sender: AnyObject) {
+        timer!.invalidate()
         print("prev pressed")
         if firstPlay == true && currentCellIndex != 0 && (orderToPlay == order.normal || orderToPlay == order.repeatItem){
             if player.getCurrentPlaybackTime() <= NSTimeInterval(4){
                 currentCellIndex += -1
                 player.playPrev()
                 unBoldPrevItem(currentCellIndex)
+                boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
             }
             else{
@@ -882,6 +932,7 @@ class musicLibraryController: UIViewController{
                 currentCellIndex = shuffleQueue[shuffleQueue.count - shuffleIndex - 1]
                 player.setNowplayingItem(currentCellIndex)
                 unBoldPrevItem(currentCellIndex)
+                boldCurrItem(currentCellIndex)
                 updateMiniPlayer()
                 shuffleIndex += 1
             }
@@ -889,6 +940,8 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
+        oldPlayerItem = player.getNowPlayingIndex()
+        timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
         
         //////////////////////////////////////////////////////////////////////////////////////
         //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
@@ -955,9 +1008,22 @@ class musicLibraryController: UIViewController{
         }
     }
     
+    func boldCurrItem(itemIndex: Int){
+        let currIndexPath = NSIndexPath(forRow: itemIndex, inSection: 0)
+        if let currCell = itemTable.cellForRowAtIndexPath(currIndexPath) as! itemCell? {
+            currCell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
+            currCell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
+            currCell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
+        }
+    }
+
+    
     //A simple converter from NSTimeInterval to a string format AB:YZ where AB is minutes and YZ is seconds
-    func stringFromTimeInterval(interval: NSTimeInterval) -> String {
-        let interval = Int(interval)
+    func stringFromTimeInterval(interval0: NSTimeInterval) -> String {
+        if interval0.isNaN{
+            return ""
+        }
+        let interval = Int(interval0)
         let seconds = interval % 60
         let minutes = (interval / 60) % 60
         return String(format: "%02d:%02d", minutes, seconds)
@@ -1013,6 +1079,7 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
             timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
+            oldPlayerItem = player.getNowPlayingIndex()
             
             //////////////////////////////////////////////////////////////////////////////////////
             //NON-PERSISTENT RECENT SORTING (more accurate, not persistent between app launches)//
@@ -1091,6 +1158,8 @@ extension musicLibraryController: UITableViewDataSource {
             return subMusicQueue.count
         case .subAlbum:
             return subAlbumQueue.count
+        case .subArtist:
+            return subArtistQueue.count
         }
     }
     
@@ -1227,7 +1296,6 @@ extension musicLibraryController: UITableViewDataSource {
                 }
             }
             cell.itemInfo.text = "Albums: \(albumCount)"
-            
             cell.artwork.image = latestAlbumArtwork
         }
         else if itemToDisplay == itemType.subAlbum{ //sub album
@@ -1316,6 +1384,43 @@ extension musicLibraryController: UITableViewDataSource {
                 cell.itemDuration.font = UIFont.systemFontOfSize(15)
             }
         }
+        else if itemToDisplay == itemType.subArtist{
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
+            let item = subArtistQueue[row]
+            cell.itemDuration.text = ""
+            if let titleOfItem = item.valueForProperty(MPMediaItemPropertyAlbumArtist) as? String {
+                cell.itemTitle.text = titleOfItem
+            }
+            else{
+                print("Resync Necessary: T")
+            }
+            
+            var albumCount = 0
+            var latestAlbumArtwork: UIImage = UIImage(named: "defaultArtwork.png")!
+            var latestAlbumDate: NSDate = NSDate.distantPast()
+            for i in 0...albumQueue.count-1{
+                if albumQueue[i].artist == item.artist{
+                    albumCount += 1
+                    if let albumDate = albumQueue[i].releaseDate{
+                        if albumDate.compare(latestAlbumDate) == NSComparisonResult.OrderedDescending{
+                            latestAlbumDate = albumQueue[i].releaseDate!
+                            if let itemArtwork = albumQueue[i].valueForProperty(MPMediaItemPropertyArtwork){
+                                latestAlbumArtwork = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))!
+                            }
+                        }
+                    }
+                    else{
+                        if let itemArtwork = albumQueue[i].valueForProperty(MPMediaItemPropertyArtwork){
+                            latestAlbumArtwork = itemArtwork.imageWithSize(CGSizeMake(60.0, 60.0))!
+                        }
+                    }
+                }
+            }
+            cell.itemInfo.text = "Albums: \(albumCount)"
+            cell.artwork.image = latestAlbumArtwork
+        }
         return cell
     }
 }
@@ -1323,6 +1428,7 @@ extension musicLibraryController: UITableViewDataSource {
 //This extention calls specific functions when a cell is tapped
 //The function called depends on the type of item being displayed in the cell
 extension musicLibraryController: UITableViewDelegate {
+
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         switch itemToDisplay {
         case .song:
@@ -1335,6 +1441,127 @@ extension musicLibraryController: UITableViewDelegate {
             songTap(indexPath.row)
         case .subAlbum:
             albumTap(indexPath)
+        case .subArtist:
+            artistTap(indexPath)
         }
+    }
+}
+
+//Handles searches
+extension musicLibraryController: UISearchBarDelegate {
+
+    //Speed up searching by invalidating external input timer
+    func searchBarTextDidBeginEditing(searchBar: UISearchBar){
+        externalInputCheckTimer!.invalidate()
+        print("stopped timer")
+    }
+    
+    //Reinitialize external input timer when finished searching
+    func searchBarTextDidEndEditing(searchBar: UISearchBar){
+        externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true)
+        print("timer reinitialized")
+    }
+    
+    func searchBarSearchButtonClicked(searchBar: UISearchBar){
+        if let searchTerm = searchBar.text{
+            oldSearchText = searchTerm
+            if backToSearch == true{
+                preSearchSort = sortType.selectedSegmentIndex
+                preSearchSubSort = subSortType.selectedSegmentIndex
+            }
+            subSortType.setEnabled(true, forSegmentAtIndex: 0)
+            subSortType.setTitle("Cancel", forSegmentAtIndex: 0)
+            subSortType.setEnabled(false, forSegmentAtIndex: 1)
+            subSortType.setTitle("", forSegmentAtIndex: 1)
+            subSortType.selectedSegmentIndex = -1
+            sortType.selectedSegmentIndex = -2
+            oldSearchDisp = itemToDisplay
+            switch itemToDisplay{
+            case .song:
+                sortChanged = true
+                print(".song search")
+                subMusicQueue.removeAll()
+                subMusicQueue = musicQueue.filter { (item) -> Bool in
+                    if item.title!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.title!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.artist!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else{
+                        return false
+                    }
+                }
+                itemToDisplay = itemType.subSong
+            case .album:
+                print(".album search")
+                subAlbumQueue.removeAll()
+                subAlbumQueue = albumQueue.filter { (item) -> Bool in
+                    if item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.artist!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else{
+                        return false
+                    }
+                }
+                itemToDisplay = itemType.subAlbum
+            case .artist:
+                print(".artist search")
+                subArtistQueue.removeAll()
+                subArtistQueue = artistQueue.filter { (item) -> Bool in
+                    return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                }
+                itemToDisplay = itemType.subArtist
+            case .subSong:
+                sortChanged = true
+                print(".subSong search")
+                subMusicQueue.removeAll()
+                subMusicQueue = musicQueue.filter { (item) -> Bool in
+                    if item.title!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.title!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.artist!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else{
+                        return false
+                    }
+                }
+                itemToDisplay = itemType.subSong
+            case .subAlbum:
+                print(".subAlbum search")
+                subAlbumQueue.removeAll()
+                subAlbumQueue = albumQueue.filter { (item) -> Bool in
+                    if item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.albumTitle!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else if item.artist!.lowercaseString.containsString(searchTerm.lowercaseString){
+                        return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                    }
+                    else{
+                        return false
+                    }
+                }
+                itemToDisplay = itemType.subAlbum
+            case .subArtist:
+                print(".subArtist search")
+                subArtistQueue.removeAll()
+                subArtistQueue = artistQueue.filter { (item) -> Bool in
+                    return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
+                }
+                itemToDisplay = itemType.subArtist
+            }
+            reloadTableInMainThread()
+        }
+        self.view.endEditing(true)
     }
 }
