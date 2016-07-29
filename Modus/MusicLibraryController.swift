@@ -487,6 +487,7 @@ class musicLibraryController: UIViewController{
         player.setNowplayingItem(itemIndex)
         playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
         timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
+        player.skipToBeginning()
         player.play()
         if let image = UIImage(named: "pause.png") {
             playerPlayButton.setImage(image, forState: .Normal)
@@ -558,7 +559,6 @@ class musicLibraryController: UIViewController{
         }
         else if sort == -2{
             print("cancel search")
-            searchBar.text = ""
             oldSearchText = ""
             sortType.selectedSegmentIndex = preSearchSort
             subSortType.selectedSegmentIndex = preSearchSubSort
@@ -878,6 +878,7 @@ class musicLibraryController: UIViewController{
     //When the user presses next, this function decides which song to play next, or whether or not it has reached the end of the queue and the player should pause
     //It also handles play order, i.e. if the play order is shuffle it finds a random song to play or continues down the shuffleQueue
     //If the play order is repeat it acts as normal (repeat order only comes into play when the song reaches the end of its duration)
+    //TODO: shuffle should not repeat songs
     @IBAction func playerNextButton(sender: AnyObject) {
         timer!.invalidate()
         print("next pressed")
@@ -891,7 +892,7 @@ class musicLibraryController: UIViewController{
         }
         else if firstPlay == true && orderToPlay == order.shuffle{
             if shuffleIndex == 1{
-                currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
+                currentCellIndex = Int(arc4random_uniform(UInt32(player.getQueueCount()-1)))
                 player.setNowplayingItem(currentCellIndex)
                 player.play()
                 shuffleQueue.append(currentCellIndex)
@@ -969,6 +970,9 @@ class musicLibraryController: UIViewController{
                 player.skipToBeginning()
             }
         }
+        else{
+            player.skipToBeginning()
+        }
         oldPlayerItem = player.getNowPlayingIndex()
         timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
         
@@ -1027,6 +1031,7 @@ class musicLibraryController: UIViewController{
     }
     
     //This function unbolds the cell text at row previousCellIndex, and sets previousCellIndex to the itemIndex (for the next time this function is called)
+    //TODO: bolding/unbolding isn't working perfectly
     func unBoldPrevItem(itemIndex: Int){
         let prevIndexPath = NSIndexPath(forRow: previousCellIndex, inSection: 0)
         if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
@@ -1092,7 +1097,7 @@ class musicLibraryController: UIViewController{
                 }
             case .shuffle:
                 if shuffleIndex == 1{
-                    currentCellIndex = Int(arc4random_uniform(UInt32(musicQueue.count-1)))
+                    currentCellIndex = Int(arc4random_uniform(UInt32(player.getQueueCount()-1)))
                     player.setNowplayingItem(currentCellIndex)
                     shuffleQueue.append(currentCellIndex)
                     unBoldPrevItem(currentCellIndex)
