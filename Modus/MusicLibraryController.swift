@@ -32,6 +32,8 @@ class musicLibraryController: UIViewController{
     private var subArtistQueue: [MPMediaItem] = []
     //private var recentAlbums: [MPMediaItem] = []
     //private var recentSongs: [MPMediaItem] = []
+    private var playlists: [Playlists] = []
+    private var activePlaylist: Int = -1
     
     private var shuffleQueue: [Int] = []
     private var shuffleIndex = 1
@@ -59,26 +61,40 @@ class musicLibraryController: UIViewController{
         case subAlbum
         case subSong
         case subArtist
+        case playlists
     }
     
     private enum oldSub{
         case subAlbum
         case album
         case recentAlb
+        case playlists
+    }
+    
+    private enum playlistOption{
+        case none
+        case create
+        case delete
+        case edit
     }
     
     private var oldSubItem = oldSub.album
     private var oldSubRow = 0
     private var oldAlbumSubSort = -1
+    private var oldArtistSubSort = -1
+    private var oldPlaylistSubSort = -1
     private var orderToPlay = order.normal
     private var itemToDisplay = itemType.song
     private var preSearchSort = -1
     private var preSearchSubSort = -1
+    private var playlistAction = playlistOption.none
     
     //REALM VARS
     
     private let realm = try! Realm()
     private var appData: Results<AppData>?
+    private var playlistResults: Results<Playlists>?
+
     //private var realmRecentAlbums: Results<RecentAlbums>?
     
     //TABLE/SORT/SEARCH
@@ -108,13 +124,8 @@ class musicLibraryController: UIViewController{
         super.viewDidLoad()
         retreiveData()
         syncLibrary()
-        if musicQueue.isEmpty{
-            return
-        }
-        else{
-            setupPlayer()
-            reloadTableInMainThread()
-        }
+        setupPlayer()
+        reloadTableInMainThread()
     }
     
     //retrieveData pulls app data from realm and stores it in the correct variable(s)
@@ -142,6 +153,7 @@ class musicLibraryController: UIViewController{
                 print("app data retrieved... OSC = \(oldSongCount)")
             }
         }
+        
         /*if let recAlb = realmRecentAlbums{
             if recAlb.isEmpty{
                 print("no rec alb data found")
@@ -153,6 +165,8 @@ class musicLibraryController: UIViewController{
                 print("rec son retrieved... RSC = \(recentSongs.count)")
             }
         }*/
+        
+        loadPlaylists()
     }
     
     //setupPlayer uses an instance of the Player class to set the first queue and starts a timer to check for external inputs (external from the app)
@@ -168,16 +182,21 @@ class musicLibraryController: UIViewController{
     }
     
     //isLibraryEmpty relays a message to the user if there are no songs in the music queue
-    func isLibraryEmpty() -> Bool{
+    //Exits the app after "Dismiss and Exit" is clicked
+    func isLibraryEmpty(){
         if musicQueue.isEmpty{
             let alertController = UIAlertController(title: "modus", message:
-                "No items found.\nMake sure there are music files on the device, then reload the app.", preferredStyle: UIAlertControllerStyle.Alert)
-            alertController.addAction(UIAlertAction(title: "Dismiss", style: UIAlertActionStyle.Default,handler: nil))
+                "No items found.\nMake sure there are music files on the device, then restart the app.", preferredStyle: UIAlertControllerStyle.Alert)
+            
+            let action = UIAlertAction(title:  "Dismiss and Exit", style: .Default, handler: { (action) in
+                print("app exiting: No music (00)")
+                exit(0)
+            })
+            
+            alertController.addAction(action)
             
             self.presentViewController(alertController, animated: true, completion: nil)
-            return true
         }
-        return false
     }
     
     //syncLibrary scrapes the device for all "songs" (MPMediaItem), it also acquires "albums" and "artists"
@@ -202,9 +221,7 @@ class musicLibraryController: UIViewController{
         print("non empty artist count: \(artistQueue.count)")
         sortChanged = false
         reSort(&musicQueue)
-        if isLibraryEmpty(){
-            return
-        }
+        isLibraryEmpty()
         newSongCount = musicQueue.count - oldSongCount
         print("New songs synced: \(newSongCount)\nTotal songs synced: \(musicQueue.count)")
         oldSongCount+=newSongCount
@@ -213,6 +230,178 @@ class musicLibraryController: UIViewController{
         try! realm.write() {
             appData![0].value = oldSongCount
             appData![0].modificationTime = NSDate()
+        }
+    }
+    
+    func loadPlaylists(){
+        playlists.removeAll()
+        playlistResults = realm.objects(Playlists)
+        if let results = playlistResults{
+            if results.isEmpty == false{
+                for playlist in results{
+                    playlists.append(playlist)
+                }
+            }
+            print("\(playlists.count) playlists loaded")
+        }
+        else{
+            print("no playlists found")
+        }
+    }
+    
+    func savePlaylists(){
+        let realm = try! Realm()
+        /*if playlistResults?.isEmpty == false{
+            realm.beginWrite()
+            realm.delete(playlistResults!)
+            try! realm.commitWrite()
+        }*/
+        for item in playlists{
+            realm.beginWrite()
+            realm.add(item)
+            try! realm.commitWrite()
+            print("playlist saved")
+        }
+        loadPlaylists()
+    }
+    
+    func createPlaylist(){
+        if playlistAction == .none{
+            externalInputCheckTimer!.invalidate()
+            print("stopped timer")
+            
+            let alertController = UIAlertController(title: "modus", message:
+                "To create a playlist, look through your music and tap on songs you would like to add. Tap on them again to delete them from the playlist. Come back to the Playlist tab and swipe left on your playlist to finish adding songs.\nYou can always add and delete songs, as well as change the playlist name later.", preferredStyle: UIAlertControllerStyle.Alert)
+            
+            alertController.addTextFieldWithConfigurationHandler {
+                (playlistName) -> Void in
+                playlistName.placeholder = "Playlist Name"
+            }
+            
+            let action0 = UIAlertAction(title:  "Create", style: .Default, handler: { (action) in
+                self.playlistAction = .create
+                //TODO add playlist name
+                let playlist = Playlists()
+                if let name = alertController.textFields?.first!.text{
+                    if name == ""{
+                        playlist.setName("Playlist \(self.playlists.count+1)")
+                    }
+                    else{
+                        playlist.setName(name)
+                    }
+                }
+                else{
+                    playlist.setName("Playlist \(self.playlists.count+1)")
+                }
+                self.playlists.append(playlist)
+                print("create playlist")
+                self.activePlaylist = self.playlists.count-1
+                self.reSort(&self.subMusicQueue)
+                self.externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true)
+                print("timer reinitialized")
+
+            })
+            
+           
+            
+            alertController.addAction(action0)
+            
+            self.presentViewController(alertController, animated: true, completion: nil)
+
+        }
+    }
+    
+    func editPlaylist(path: NSIndexPath){
+        externalInputCheckTimer!.invalidate()
+        print("stopped timer")
+        if playlistAction == .none{
+            let alertController = UIAlertController(title: "modus", message:
+         "To edit a playlist, look through your music and tap on songs you would like to add or delete.", preferredStyle: UIAlertControllerStyle.Alert)
+         
+            alertController.addTextFieldWithConfigurationHandler {
+                (playlistName) -> Void in
+                playlistName.placeholder = "\(self.playlists[path.row].getName())"
+            }
+            
+         let action0 = UIAlertAction(title:  "Edit", style: .Default, handler: { (action) in
+            self.playlistAction = .edit
+            self.activePlaylist = path.row
+            self.realm.beginWrite()
+            if let name = alertController.textFields?.first!.text{
+                if name == ""{
+                    self.playlists[path.row].setName("\(self.playlists[path.row].getName())")
+                }
+                else{
+                    self.playlists[path.row].setName(name)
+                }
+            }
+            else{
+                self.playlists[path.row].setName("\(self.playlists[path.row].getName())")
+            }
+            try! self.realm.commitWrite()
+            print("edit playlist")
+            self.reSort(&self.subMusicQueue)
+            self.externalInputCheckTimer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.checkExternalButtonPress), userInfo: nil, repeats: true)
+            print("timer reinitialized")
+
+         })
+         
+         alertController.addAction(action0)
+         
+         self.presentViewController(alertController, animated: true, completion: nil)
+
+        }
+    }
+    
+    func deletePlaylist(path: NSIndexPath){
+        if playlistAction == .none{
+            let alertController = UIAlertController(title: "modus", message:
+            "Are you sure you wish to delete \(playlists[path.row].getName())?", preferredStyle: UIAlertControllerStyle.Alert)
+        
+            let action0 = UIAlertAction(title:  "Cancel", style: .Default, handler: { (action) in
+                self.playlistAction = .none
+                print("cancel delete playlist")
+            })
+        let action1 = UIAlertAction(title:  "Delete", style: .Default, handler: { (action) in
+            self.playlistAction = .delete
+            if self.activePlaylist == path.row{
+                self.activePlaylist = -1
+            }
+            //remove specific from realm
+            let realm = try! Realm()
+            realm.beginWrite()
+            realm.delete(self.playlists[path.row])
+            try! realm.commitWrite()
+            self.playlists.removeAtIndex(path.row)
+            self.playlistAction = .none
+            self.reSort(&self.subMusicQueue)
+            print("delete playlist")
+        })
+        
+            alertController.addAction(action0)
+        alertController.addAction(action1)
+        
+        self.presentViewController(alertController, animated: true, completion: nil)
+        }
+    }
+    
+    func finishPlaylistAction(){
+        if playlistAction != .none{
+            var end = "d"
+            if playlistAction == .edit{
+                end = "ed"
+            }
+            let alertController = UIAlertController(title: "modus", message:
+                "You've \(playlistAction)\(end) \(playlists[activePlaylist].getName()). It now has \(playlists[activePlaylist].getCount()) songs.", preferredStyle: UIAlertControllerStyle.Alert)
+            
+            let action0 = UIAlertAction(title:  "Dismiss", style: .Default, handler: nil)
+            
+            alertController.addAction(action0)
+            
+            self.presentViewController(alertController, animated: true, completion: nil)
+            playlistAction = .none
+            savePlaylists()
+            reSort(&subAlbumQueue)
         }
     }
     
@@ -276,8 +465,9 @@ class musicLibraryController: UIViewController{
     //songTap takes the row of cell that was pressed (equivalent to the index of the item to be played in the queue) as a parameter and assigns it to currentCellIndex. The item is played by calling playItem()
     //The previous cell's font is unbolded, and the current cell's font is bolded to indicate that the song indexed by the cell is playing
     func songTap(row: Int) {
-        print("song chosen")
         currentCellIndex = row
+        if playlistAction == .none{
+        print("song chosen")
         playItem(currentCellIndex)
         if previousCellIndex != currentCellIndex{
             unBoldPrevItem(currentCellIndex)
@@ -353,6 +543,45 @@ class musicLibraryController: UIViewController{
         try! realm.write() {
             realmRecentAlbums![0].songsArray = recentSongs
         }*/
+        }
+        else if playlistAction == .create || playlistAction == .edit{
+            var action = "removed"
+            var pointer = "from"
+            realm.beginWrite()
+            if itemToDisplay == .song{
+                if playlists[activePlaylist].removeItem(musicQueue[currentCellIndex]){
+                    print("song removed from playlist \(musicQueue[currentCellIndex].title)")
+                }
+                else{
+                    playlists[activePlaylist].addItem(musicQueue[currentCellIndex])
+                    print("song added to playlist \(musicQueue[currentCellIndex].title)")
+                    action = "added"
+                    pointer = "to"
+                }
+            }
+            else if itemToDisplay == .subSong{
+                if playlists[activePlaylist].removeItem(subMusicQueue[currentCellIndex]){
+                    print("song removed from playlist \(subMusicQueue[currentCellIndex].title)")
+                }
+                else{
+                    playlists[activePlaylist].addItem(subMusicQueue[currentCellIndex])
+                    print("song added to playlist \(subMusicQueue[currentCellIndex].title)")
+                    action = "added"
+                    pointer = "to"
+                }
+            
+            }
+            try! realm.commitWrite()
+            
+            let alertController = UIAlertController(title: "modus", message:
+                "You've \(action) \(musicQueue[currentCellIndex].title!) \(pointer) \(playlists[activePlaylist].getName())!", preferredStyle: UIAlertControllerStyle.Alert)
+            
+            let action0 = UIAlertAction(title:  "Continue", style: .Default, handler: nil)
+            
+            alertController.addAction(action0)
+            
+            self.presentViewController(alertController, animated: true, completion: nil)
+        }
     }
     
     //sliderChange handles track seeking while audio is playing
@@ -387,7 +616,7 @@ class musicLibraryController: UIViewController{
         }
         print("sub-music count: \(subMusicQueue.count)")
         
-        //TODO: sort by disc number then tracknumber
+        //TODO: sort by disc number then tracknumber also this code is super fucking clunky and will obviously not work right CMON
         subMusicQueue.sortInPlace{
             if $0.albumTrackNumber == 0 || $1.albumTrackNumber == 0{
                 print("track number error in sorting")
@@ -427,7 +656,7 @@ class musicLibraryController: UIViewController{
         print("arist chosen")
         if let cell = itemTable.cellForRowAtIndexPath(path) as! itemCell? {
             subAlbumQueue = albumQueue.filter { (item) -> Bool in
-                return item.artist == cell.itemTitle.text
+                return item.artist?.caseInsensitiveCompare(cell.itemTitle.text!) == NSComparisonResult.OrderedSame
             }
             artistTapTitle = cell.itemTitle.text!
         }
@@ -454,6 +683,36 @@ class musicLibraryController: UIViewController{
         reloadTableInMainThread()
     }
     
+    func playlistTap(path: NSIndexPath){
+        searchBar.userInteractionEnabled = false
+        subMusicQueue.removeAll()
+        subSortType.setEnabled(true, forSegmentAtIndex: 0)
+        subSortType.setTitle("Back", forSegmentAtIndex: 0)
+        subSortType.setEnabled(false, forSegmentAtIndex: 1)
+        subSortType.setTitle("", forSegmentAtIndex: 1)
+        subSortType.selectedSegmentIndex = -1
+        sortType.selectedSegmentIndex = -1
+        print("playlist chosen")
+        let itemArray = playlists[path.row].getItemsAsArray()
+        for song in itemArray{
+            let possibleMatches: [MPMediaItem] = musicQueue.filter{ (item) -> Bool in
+                if item.title! == song.title && item.artist! == song.artist && item.albumTitle! == song.album && item.playbackDuration == song.duration{
+                    print("match found")
+                    return true
+                }
+                else{
+                    return false
+                }
+            }
+            if possibleMatches.count > 0{
+                print("match added")
+                subMusicQueue.append(possibleMatches.first!)
+            }
+        }
+        itemToDisplay = .subSong
+        reloadTableInMainThread()
+    }
+    
     //A timer tracking a song's current playback time is stopped
     //If the sort type was changed and a song was tapped a new "queue" must be given to the system music player
     //The cell at indexPath's font is bolded to indicate it's status to the user (playing)
@@ -477,13 +736,12 @@ class musicLibraryController: UIViewController{
         }
         let indexpath = NSIndexPath(forRow: itemIndex, inSection: 0)
         if let cell = itemTable.cellForRowAtIndexPath(indexpath) as! itemCell? {
-            cell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
-            cell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
-            cell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
             playerArtwork.image = cell.artwork.image
             playerTitle.text = cell.itemTitle.text
             playerInfo.text = cell.itemInfo.text
         }
+        unBoldPrevItem(currentCellIndex)
+        boldCurrItem(currentCellIndex)
         player.setNowplayingItem(itemIndex)
         playerTotTime.text = stringFromTimeInterval((player.getNowPlayingItem()?.playbackDuration)!)
         timer = NSTimer.scheduledTimerWithTimeInterval(0.001, target: self, selector: #selector(musicLibraryController.audioProgress), userInfo: nil, repeats: true)
@@ -522,7 +780,8 @@ class musicLibraryController: UIViewController{
             reSort(&subMusicQueue) //irrelevant parameter
         }
         else if sort == 0{
-            
+            oldSubItem = .playlists
+            reSort(&subAlbumQueue) //irrelevant parameter
         }
     }
     
@@ -551,6 +810,7 @@ class musicLibraryController: UIViewController{
             searchBar.userInteractionEnabled = true
         }
         else if sort == 0{
+            reSort(&subAlbumQueue) //irrelevant parameter
             searchBar.userInteractionEnabled = true
         }
         else if sort == -1{
@@ -598,12 +858,17 @@ class musicLibraryController: UIViewController{
                 sortType.selectedSegmentIndex = 1
                 subSortType.selectedSegmentIndex = 1
                 reSort(&subAlbumQueue)
+            case .playlists:
+                print("back to playlist")
+                sortType.selectedSegmentIndex = 0
+                subSortType.selectedSegmentIndex = oldPlaylistSubSort
+                reSort(&albumQueue)
             }
         }
         else if itemToDisplay == itemType.subAlbum{ //current view displays albums, so we want to go back to displaying the artists
             print("back to art")
             sortType.selectedSegmentIndex = 2
-            subSortType.selectedSegmentIndex = 0
+            subSortType.selectedSegmentIndex = oldArtistSubSort
             reSort(&artistQueue)
         }
         searchBar.userInteractionEnabled = true
@@ -614,7 +879,6 @@ class musicLibraryController: UIViewController{
     //I have written code to replace this with a version that saves recently played songs to a queue when it starts but it is not persistent between app launches (see above)
     //getRecentSongs sorts the musicQueue by lastPlayedDate (newest first) and then assigns the first 50 songs to the subMusicQueue
     func getRecentSongs(){
-        var error = false
         musicQueue.sortInPlace{
             if let playDate1 = $0.lastPlayedDate , let playDate2 = $1.lastPlayedDate{
                 return playDate1.compare(playDate2) == NSComparisonResult.OrderedDescending
@@ -626,12 +890,9 @@ class musicLibraryController: UIViewController{
                 return false
             }
             else{
-                error = true
-                return NSDate.distantPast().compare(NSDate.distantPast()) == NSComparisonResult.OrderedDescending
+                //print("recently played date error in getRecentSongs")
+                return false
             }
-        }
-        if error{
-            print("recently played date error in getRecentSongs")
         }
         subMusicQueue.removeAll()
         if musicQueue.count > 50{
@@ -640,7 +901,7 @@ class musicLibraryController: UIViewController{
             }
         }
         else{
-            for i in 0...musicQueue.count{
+            for i in 0...musicQueue.count-1{
                 subMusicQueue.append(musicQueue[i])
             }
         }
@@ -754,12 +1015,14 @@ class musicLibraryController: UIViewController{
                 query.sortInPlace{
                     return $0.artist < $1.artist
                 }
+                oldArtistSubSort = 0
                 print("sort: artist alpha")
             }
             else if subSort == 1{
                 query.sortInPlace{
                     return $0.artist > $1.artist
                 }
+                oldArtistSubSort = 1
                 print("sort: artist reverse")
             }
             reloadTableInMainThread()
@@ -786,17 +1049,40 @@ class musicLibraryController: UIViewController{
             reloadTableInMainThread()
             return
         }
-        else if sort == 0{ //playlist NOT IMPLEMENTED
-            itemToDisplay = itemType.song
-            subSortType.setTitle("Recent", forSegmentAtIndex: 0)
-            subSortType.setTitle("Playcount", forSegmentAtIndex: 1)
+        else if sort == 0{ //playlist
+            itemToDisplay = itemType.playlists
+            subSortType.setTitle("Alphabetical", forSegmentAtIndex: 0)
+            subSortType.setTitle("Date Modified", forSegmentAtIndex: 1)
+            searchBar.userInteractionEnabled = false
+            //loadPlaylists()
+            var activePlaylistLoc: Playlists?
+            if activePlaylist > -1 && activePlaylist < playlists.count{
+                activePlaylistLoc = playlists[activePlaylist]
+            }
             if subSort == 0{
-                
-                print("sort: recent")
+                oldPlaylistSubSort = 0
+                playlists.sortInPlace{
+                    return $0.getName() < $1.getName()
+                }
+                print("sort: playlist alpha")
             }
             else if subSort == 1{
-                
-                print("sort: recent playcount")
+                oldPlaylistSubSort = 1
+                playlists.sortInPlace{
+                    return $0.getModifyDate().compare($1.getModifyDate()) == NSComparisonResult.OrderedDescending
+                }
+                print("sort: playlist date")
+            }
+            if activePlaylist > -1{
+                var counter = 0
+                for item in playlists{
+                    if item == activePlaylistLoc{
+                        activePlaylist = counter
+                    }
+                    else{
+                        counter += 1
+                    }
+                }
             }
             reloadTableInMainThread()
             return
@@ -1033,22 +1319,23 @@ class musicLibraryController: UIViewController{
     //This function unbolds the cell text at row previousCellIndex, and sets previousCellIndex to the itemIndex (for the next time this function is called)
     //TODO: bolding/unbolding isn't working perfectly
     func unBoldPrevItem(itemIndex: Int){
-        let prevIndexPath = NSIndexPath(forRow: previousCellIndex, inSection: 0)
+        /*let prevIndexPath = NSIndexPath(forRow: previousCellIndex, inSection: 0)
         if let prevCell = itemTable.cellForRowAtIndexPath(prevIndexPath) as! itemCell? {
             prevCell.itemTitle.font = UIFont.systemFontOfSize(17)
             prevCell.itemInfo.font = UIFont.systemFontOfSize(17)
             prevCell.itemDuration.font = UIFont.systemFontOfSize(15)
             previousCellIndex = itemIndex
-        }
+        }*/
     }
     
     func boldCurrItem(itemIndex: Int){
-        let currIndexPath = NSIndexPath(forRow: itemIndex, inSection: 0)
+        /*let currIndexPath = NSIndexPath(forRow: itemIndex, inSection: 0)
         if let currCell = itemTable.cellForRowAtIndexPath(currIndexPath) as! itemCell? {
             currCell.itemTitle.font = UIFont.boldSystemFontOfSize(17)
             currCell.itemInfo.font = UIFont.boldSystemFontOfSize(17)
             currCell.itemDuration.font = UIFont.boldSystemFontOfSize(15)
-        }
+        }*/
+        reloadTableInMainThread()
     }
 
     
@@ -1057,10 +1344,19 @@ class musicLibraryController: UIViewController{
         if interval0.isNaN{
             return ""
         }
-        let interval = Int(interval0)
-        let seconds = interval % 60
-        let minutes = (interval / 60) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+        if interval0 >= 3600{
+            let interval = Int(interval0)
+            let seconds = interval % 60
+            let minutes = (interval / 60) % 60
+            let hours = ((interval / 60) / 60) % 60
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        }
+        else{
+            let interval = Int(interval0)
+            let seconds = interval % 60
+            let minutes = (interval / 60) % 60
+            return String(format: "%02d:%02d", minutes, seconds)
+        }
     }
     
     //This function is called by timer every millisecond
@@ -1197,6 +1493,8 @@ extension musicLibraryController: UITableViewDataSource {
             return subAlbumQueue.count
         case .subArtist:
             return subArtistQueue.count
+        case .playlists:
+            return playlists.count+1
         }
     }
     
@@ -1251,6 +1549,7 @@ extension musicLibraryController: UITableViewDataSource {
                 playerArtwork.image = cell.artwork.image
                 playerTitle.text = cell.itemTitle.text
                 playerInfo.text = cell.itemInfo.text
+                updateMiniPlayer()
             }
             else{
                 cell.itemTitle.font = UIFont.systemFontOfSize(17)
@@ -1465,6 +1764,25 @@ extension musicLibraryController: UITableViewDataSource {
             cell.itemInfo.text = "Albums: \(albumCount)"
             cell.artwork.image = latestAlbumArtwork
         }
+        else if itemToDisplay == itemType.playlists{
+            cell.itemTitle.font = UIFont.systemFontOfSize(17)
+            cell.itemInfo.font = UIFont.systemFontOfSize(17)
+            cell.itemDuration.font = UIFont.systemFontOfSize(15)
+            cell.artwork.image = UIImage(named: "defaultArtwork.png")!
+            if row == playlists.count{
+                //TODO set image and write function for add cell
+                //TODO populate cells
+                cell.itemInfo.text = ""
+                cell.itemDuration.text = ""
+                cell.itemTitle.text = "Create new playlist"
+            }
+            else{
+                let item = playlists[row]
+                cell.itemTitle.text = item.getName()
+                cell.itemInfo.text = "Songs: \(item.getCount())"
+                cell.itemDuration.text = stringFromTimeInterval(item.getTimeInterval())
+            }
+        }
         return cell
     }
 }
@@ -1487,7 +1805,52 @@ extension musicLibraryController: UITableViewDelegate {
             albumTap(indexPath)
         case .subArtist:
             artistTap(indexPath)
+        case .playlists:
+            if indexPath.row == playlists.count{
+                createPlaylist()
+            }
+            else{
+                playlistTap(indexPath)
+            }
         }
+    }
+    
+    func tableView(tableView: UITableView, editActionsForRowAtIndexPath indexPath: NSIndexPath) -> [UITableViewRowAction]? {
+        if itemToDisplay == itemType.playlists{
+            let delete =  UITableViewRowAction(style: .Normal, title: "Delete")
+            { action, index in
+                self.deletePlaylist(indexPath)
+                print("delete playlist tapped")
+            }
+            delete.backgroundColor = UIColor.redColor()
+            
+            let edit =  UITableViewRowAction(style: .Normal, title: "Edit")
+            { action, index in
+                self.editPlaylist(indexPath)
+                print("edit playlist tapped")
+            }
+            edit.backgroundColor = UIColor.grayColor()
+            
+            let finish =  UITableViewRowAction(style: .Normal, title: "Finish")
+            { action, index in
+                self.finishPlaylistAction()
+                print("finish playlist action")
+            }
+            finish.backgroundColor = UIColor.greenColor()
+            
+            if playlistAction == playlistOption.none{
+                return [delete, edit]
+            }
+            return [finish]
+        }
+        return nil
+    }
+    
+    func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
+        if itemToDisplay == itemType.playlists{
+            return true
+        }
+        return false
     }
 }
 
@@ -1606,6 +1969,8 @@ extension musicLibraryController: UISearchBarDelegate {
                     return item.artist!.lowercaseString.containsString(searchTerm.lowercaseString)
                 }
                 itemToDisplay = itemType.subArtist
+            case .playlists: //TODO
+                return
             }
             reloadTableInMainThread()
         }

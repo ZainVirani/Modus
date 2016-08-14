@@ -13,11 +13,12 @@
 		186EC7881D21A5CA00E3AF4B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7871D21A5CA00E3AF4B /* Assets.xcassets */; };
 		186EC78B1D21A5CA00E3AF4B /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 186EC7891D21A5CA00E3AF4B /* LaunchScreen.storyboard */; };
 		187359601D21A97600FEFE45 /* ItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1873595F1D21A97600FEFE45 /* ItemCell.swift */; };
-		1879A2311D4813FE00348D5D /* RecentAlbums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1879A2301D4813FE00348D5D /* RecentAlbums.swift */; };
 		1879A2341D4ABE0E00348D5D /* dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 1879A2331D4ABE0E00348D5D /* dummy.m */; };
 		18AC62FA1D36C54D001390E7 /* MusicPlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC62F91D36C54D001390E7 /* MusicPlayerController.swift */; };
 		18AC63061D38191F001390E7 /* Player.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18AC63051D38191F001390E7 /* Player.swift */; };
 		18D41CBE1D3564F000DE632D /* AppData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18D41CBD1D3564F000DE632D /* AppData.swift */; };
+		18E877D61D53E9530079A03B /* Playlists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E877D51D53E9530079A03B /* Playlists.swift */; };
+		18E877D81D53EA940079A03B /* PlaylistItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18E877D71D53EA940079A03B /* PlaylistItem.swift */; };
 		4779F0DBC2387C67572BF86A /* Pods_Modus.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4F77D84EDE93CE0F0576482C /* Pods_Modus.framework */; };
 /* End PBXBuildFile section */
 
@@ -30,12 +31,13 @@
 		186EC78A1D21A5CA00E3AF4B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		186EC78C1D21A5CA00E3AF4B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1873595F1D21A97600FEFE45 /* ItemCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ItemCell.swift; sourceTree = "<group>"; };
-		1879A2301D4813FE00348D5D /* RecentAlbums.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RecentAlbums.swift; sourceTree = "<group>"; };
 		1879A2321D4ABE0D00348D5D /* Modus-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Modus-Bridging-Header.h"; sourceTree = "<group>"; };
 		1879A2331D4ABE0E00348D5D /* dummy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = dummy.m; sourceTree = "<group>"; };
 		18AC62F91D36C54D001390E7 /* MusicPlayerController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MusicPlayerController.swift; sourceTree = "<group>"; };
 		18AC63051D38191F001390E7 /* Player.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Player.swift; sourceTree = "<group>"; };
 		18D41CBD1D3564F000DE632D /* AppData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppData.swift; sourceTree = "<group>"; };
+		18E877D51D53E9530079A03B /* Playlists.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Playlists.swift; sourceTree = "<group>"; };
+		18E877D71D53EA940079A03B /* PlaylistItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaylistItem.swift; sourceTree = "<group>"; };
 		1BC08BED9E20C6D1F129D769 /* Pods-Modus.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Modus.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Modus/Pods-Modus.debug.xcconfig"; sourceTree = "<group>"; };
 		220D8FDF54D73ACAB4A0FAD1 /* Pods-Modus.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Modus.release.xcconfig"; path = "Pods/Target Support Files/Pods-Modus/Pods-Modus.release.xcconfig"; sourceTree = "<group>"; };
 		4F77D84EDE93CE0F0576482C /* Pods_Modus.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Modus.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -89,9 +91,10 @@
 		18AC62FB1D36DAD7001390E7 /* model */ = {
 			isa = PBXGroup;
 			children = (
-				1879A2301D4813FE00348D5D /* RecentAlbums.swift */,
 				1873595F1D21A97600FEFE45 /* ItemCell.swift */,
 				18D41CBD1D3564F000DE632D /* AppData.swift */,
+				18E877D51D53E9530079A03B /* Playlists.swift */,
+				18E877D71D53EA940079A03B /* PlaylistItem.swift */,
 			);
 			name = model;
 			sourceTree = "<group>";
@@ -280,13 +283,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				18AC62FA1D36C54D001390E7 /* MusicPlayerController.swift in Sources */,
+				18E877D81D53EA940079A03B /* PlaylistItem.swift in Sources */,
 				186EC7831D21A5CA00E3AF4B /* MusicLibraryController.swift in Sources */,
 				186EC7811D21A5CA00E3AF4B /* AppDelegate.swift in Sources */,
 				187359601D21A97600FEFE45 /* ItemCell.swift in Sources */,
 				18AC63061D38191F001390E7 /* Player.swift in Sources */,
-				1879A2311D4813FE00348D5D /* RecentAlbums.swift in Sources */,
 				1879A2341D4ABE0E00348D5D /* dummy.m in Sources */,
 				18D41CBE1D3564F000DE632D /* AppData.swift in Sources */,
+				18E877D61D53E9530079A03B /* Playlists.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -403,11 +407,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.modusplayer;
 				PRODUCT_NAME = modus;
+				PROVISIONING_PROFILE = "e618be42-01f7-4dca-88ca-4ca7382f0672";
 				SWIFT_OBJC_BRIDGING_HEADER = "Modus/Modus-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TARGETED_DEVICE_FAMILY = 2;
@@ -420,11 +425,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "";
 				INFOPLIST_FILE = Modus/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.makeschool.modusplayer;
 				PRODUCT_NAME = modus;
+				PROVISIONING_PROFILE = "e618be42-01f7-4dca-88ca-4ca7382f0672";
 				SWIFT_OBJC_BRIDGING_HEADER = "Modus/Modus-Bridging-Header.h";
 				TARGETED_DEVICE_FAMILY = 2;
 			};
